@@ -1,0 +1,23 @@
+# Unreal Engine - 컴파일 결과물 (로컬에서 자동 생성됨)
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.sln
+
+# Unreal Editor 임시 파일
+*.VC.db
+*.opensdf
+*.opendb
+
+# Content 중 제외할 것들 (에픽 기본 에셋을 참조할 경우)
+# Content/Redirectors/  # 필요시 주석 해제
+
+# OS
+.DS_Store
+Thumbs.db
