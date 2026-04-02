@@ -26,7 +26,7 @@ public class SHLyraProjectRuntime : ModuleRules
 			"LyraGame",
 			"CommonGame",
 			"CommonUI",
-			"GameplayMessageRouter",
+			"GameplayMessageRuntime",
 		});
 	}
 }

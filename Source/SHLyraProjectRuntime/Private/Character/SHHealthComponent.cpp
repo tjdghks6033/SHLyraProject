@@ -14,7 +14,7 @@
 #include "NativeGameplayTags.h"
 
 // UI에 체력 변화를 전달하는 메시지 버스
-#include "GameplayMessageSubsystem.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SHHealthComponent)
 
