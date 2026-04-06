@@ -124,6 +124,10 @@ protected:
 	// GameplayMessageSubsystem으로 UI에 스태미나 정보 브로드캐스트
 	void BroadcastStaminaChange(float CurrentStamina, float MaxStamina);
 
+	// ASC::OnAbilityActivated 콜백: Ability.Type.Action.Dash 태그를 가진
+	// 어빌리티가 활성화되면 StaminaDashCostEffect를 적용합니다.
+	void HandleAbilityActivated(UGameplayAbility* ActivatedAbility);
+
 	// -------------------------------------------------------
 	// 멤버 변수
 	// -------------------------------------------------------
@@ -133,6 +137,17 @@ protected:
 	// 스태미나가 소비될 때 적용, 가득 찼을 때 제거합니다.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Stamina|Regen")
 	TSubclassOf<UGameplayEffect> StaminaRegenEffect;
+
+	// 대쉬 어빌리티(Ability.Type.Action.Dash) 활성화 시 적용되는 스태미나 소비 GE.
+	// SHStaminaSet.StaminaCost를 설정해 Stamina를 차감합니다.
+	// BP_SHStaminaComponent에서 GE_SHStaminaDashCost를 지정합니다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Stamina|DashCost")
+	TSubclassOf<UGameplayEffect> StaminaDashCostEffect;
+
+	// 대쉬 한 번에 필요한 최소 스태미나.
+	// 이 값 미만이면 Ability.Type.Action.Dash 태그를 가진 어빌리티가 차단됩니다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Stamina|DashCost")
+	float DashStaminaCostThreshold = 50.0f;
 
 	// ASC 초기화 이후 캐싱됩니다. Regen GE 적용/제거에 사용합니다.
 	UPROPERTY()
@@ -147,4 +162,7 @@ protected:
 
 	// 스태미나 소진 상태 플래그 (중복 처리 방지)
 	bool bIsOutOfStamina = false;
+
+	// 대쉬가 현재 차단된 상태인지 추적합니다 (중복 Block/Unblock 호출 방지).
+	bool bDashBlocked = false;
 };

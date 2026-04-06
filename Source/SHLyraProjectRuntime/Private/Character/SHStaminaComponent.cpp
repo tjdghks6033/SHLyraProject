@@ -10,6 +10,7 @@
 // GameplayTag 부여/제거에 사용
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Abilities/GameplayAbility.h"
 #include "NativeGameplayTags.h"
 
 // UI에 스태미나 변화를 전달하는 메시지 버스
@@ -23,6 +24,9 @@ UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_SH_Status_OutOfStamina, "SH.Status.OutOfStamin
 
 // UI 메시지 채널 태그. 이 채널을 구독하는 위젯이 스태미나 변화를 수신합니다.
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_SH_Message_Stamina_Changed, "SH.Message.Stamina.Changed");
+
+// GA_Hero_Dash에 부여된 어빌리티 태그. 이 태그로 대쉬 어빌리티를 식별합니다.
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Ability_Type_Action_Dash, "Ability.Type.Action.Dash");
 
 
 USHStaminaComponent::USHStaminaComponent(const FObjectInitializer& ObjectInitializer)
@@ -85,6 +89,9 @@ void USHStaminaComponent::OnAbilitySystemInitialized()
 	StaminaSet->OnStaminaChanged.AddUObject(this, &ThisClass::HandleStaminaChanged);
 	StaminaSet->OnOutOfStamina.AddUObject(this, &ThisClass::HandleOutOfStamina);
 
+	// 대쉬 어빌리티 활성화 감지: GA_Hero_Dash가 켜질 때마다 스태미나를 소비합니다.
+	ASC->AbilityActivatedCallbacks.AddUObject(this, &ThisClass::HandleAbilityActivated);
+
 	// 초기 상태 처리:
 	// 스태미나가 최대치 미만이라면 즉시 Regen을 시작합니다.
 	const float CurrentStamina = StaminaSet->GetStamina();
@@ -93,6 +100,13 @@ void USHStaminaComponent::OnAbilitySystemInitialized()
 	if (CurrentStamina < MaxStamina && StaminaRegenEffect)
 	{
 		ApplyRegenEffect();
+	}
+
+	// 초기 스태미나가 대쉬 비용 미만이라면 즉시 차단합니다.
+	if (CurrentStamina < DashStaminaCostThreshold)
+	{
+		ASC->BlockAbilitiesWithTags(FGameplayTagContainer(TAG_Ability_Type_Action_Dash));
+		bDashBlocked = true;
 	}
 
 	BroadcastStaminaChange(CurrentStamina, MaxStamina);
@@ -106,6 +120,18 @@ void USHStaminaComponent::OnAbilitySystemUninitialized()
 		StaminaSet->OnStaminaChanged.RemoveAll(this);
 		StaminaSet->OnOutOfStamina.RemoveAll(this);
 		StaminaSet = nullptr;
+	}
+
+	if (CachedASC)
+	{
+		CachedASC->AbilityActivatedCallbacks.RemoveAll(this);
+
+		// ASC 해제 전에 차단 상태를 정리합니다.
+		if (bDashBlocked)
+		{
+			CachedASC->UnBlockAbilitiesWithTags(FGameplayTagContainer(TAG_Ability_Type_Action_Dash));
+			bDashBlocked = false;
+		}
 	}
 
 	RemoveRegenEffect();
@@ -144,6 +170,23 @@ void USHStaminaComponent::HandleStaminaChanged(AActor* Instigator, AActor* Cause
 	{
 		CachedASC->RemoveLooseGameplayTag(TAG_SH_Status_OutOfStamina);
 		bIsOutOfStamina = false;
+	}
+
+	// -------------------------------------------------------
+	// 대쉬 차단/해제:
+	//   스태미나 < DashStaminaCostThreshold → 대쉬 차단
+	//   스태미나 ≥ DashStaminaCostThreshold → 차단 해제
+	// -------------------------------------------------------
+	const bool bCanDash = (NewValue >= DashStaminaCostThreshold);
+	if (bDashBlocked && bCanDash)
+	{
+		CachedASC->UnBlockAbilitiesWithTags(FGameplayTagContainer(TAG_Ability_Type_Action_Dash));
+		bDashBlocked = false;
+	}
+	else if (!bDashBlocked && !bCanDash)
+	{
+		CachedASC->BlockAbilitiesWithTags(FGameplayTagContainer(TAG_Ability_Type_Action_Dash));
+		bDashBlocked = true;
 	}
 
 	BroadcastStaminaChange(NewValue, MaxStamina);
@@ -211,6 +254,34 @@ void USHStaminaComponent::BroadcastStaminaChange(float CurrentStamina, float Max
 	Message.StaminaNormalized = (MaxStamina > 0.0f) ? (CurrentStamina / MaxStamina) : 0.0f;
 
 	MessageSystem.BroadcastMessage(TAG_SH_Message_Stamina_Changed, Message);
+}
+
+void USHStaminaComponent::HandleAbilityActivated(UGameplayAbility* ActivatedAbility)
+{
+	if (!CachedASC || !StaminaDashCostEffect || !ActivatedAbility)
+	{
+		return;
+	}
+
+	// Ability.Type.Action.Dash 태그를 가진 어빌리티만 처리합니다.
+	// GA_Hero_Dash(ShooterCore)가 이 태그를 보유합니다.
+	if (!ActivatedAbility->GetAssetTags().HasTag(TAG_Ability_Type_Action_Dash))
+	{
+		return;
+	}
+
+	// StaminaCost 메타 어트리뷰트를 통해 스태미나 50을 차감합니다.
+	// SHStaminaSet::PostGameplayEffectExecute에서 Stamina -= StaminaCost 처리됩니다.
+	FGameplayEffectContextHandle ContextHandle = CachedASC->MakeEffectContext();
+	ContextHandle.AddSourceObject(GetOwner());
+
+	FGameplayEffectSpecHandle SpecHandle = CachedASC->MakeOutgoingSpec(
+		StaminaDashCostEffect, 1.0f, ContextHandle);
+
+	if (SpecHandle.IsValid())
+	{
+		CachedASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
 }
 
 float USHStaminaComponent::GetStaminaNormalized() const

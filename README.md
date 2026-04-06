@@ -36,7 +36,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 |--------|------|------|
 | USHHealthComponent | LyraHealthSet 이벤트 구독, 저체력 GameplayTag 관리, GameplayMessage 브로드캐스트 | 완료 |
 | USHStaminaSet | Lyra에 없는 스태미나 리소스를 GAS AttributeSet으로 직접 설계, 복제 지원 | 완료 |
-| USHStaminaComponent | 스태미나 상태 관리, Regen GE 최적화, OutOfStamina 태그 관리 | 완료 |
+| USHStaminaComponent | 스태미나 상태 관리, Regen GE 최적화, OutOfStamina 태그 관리, 대쉬 스태미나 소비 및 차단 | 완료 |
 | GA_SHDash | 스태미나를 소비하는 대시 어빌리티 | 예정 |
 | WBP_SHStaminaBar | 스태미나 HUD 위젯 (CommonUI + GameplayMessage) | 예정 |
 
