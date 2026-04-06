@@ -34,7 +34,6 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 
 | 시스템 | 설명 | 상태 |
 |--------|------|------|
-| USHHealthComponent | LyraHealthSet 이벤트 구독, 저체력 GameplayTag 관리, GameplayMessage 브로드캐스트 | 완료 |
 | USHStaminaSet | Lyra에 없는 스태미나 리소스를 GAS AttributeSet으로 직접 설계, 복제 지원 | 완료 |
 | USHStaminaComponent | 스태미나 상태 관리, Regen GE 최적화, OutOfStamina 태그 관리, 대쉬 스태미나 소비 및 차단 | 완료 |
 | GA_SHDash | 스태미나를 소비하는 대시 어빌리티 | 예정 |
@@ -49,13 +48,12 @@ SHLyraProject (GameFeaturePlugin)
     │
     ├── GameFeatureData
     │       └── GameFeatureActions
-    │               ├── AddComponents  → ALyraCharacter에 USHHealthComponent, USHStaminaComponent 부착
+    │               ├── AddComponents  → ALyraCharacter에 USHStaminaComponent 부착
     │               ├── AddAbilities   → ALyraPlayerState에 DA_SHAbilitySet 부여 (USHStaminaSet 포함)
     │               └── AddWidgets     → UIExtension 슬롯에 커스텀 HUD 주입 (예정)
     │
     └── Source/SHLyraProjectRuntime/
             ├── Character/
-            │       ├── SHHealthComponent    — LyraHealthSet 구독, SH.Status.LowHealth 태그
             │       └── SHStaminaComponent   — StaminaSet 바인딩, Regen GE 관리
             └── AbilitySystem/
                     └── Attributes/
@@ -99,12 +97,10 @@ SHLyraProject (GameFeaturePlugin)
 
 | 태그 | 부여 시점 | 용도 |
 |------|----------|------|
-| `SH.Status.LowHealth` | 체력 30% 이하 | 위험 상태 연출 트리거 |
 | `SH.Status.OutOfStamina` | 스태미나 0 | GA_SHDash 발동 차단 |
 
 ### GameplayMessage 채널
 
 | 채널 | 페이로드 | 구독 대상 |
 |------|---------|---------|
-| `SH.Message.Health.Changed` | `FSHHealthChangedMessage` | 체력 HUD |
 | `SH.Message.Stamina.Changed` | `FSHStaminaChangedMessage` | 스태미나 HUD |
