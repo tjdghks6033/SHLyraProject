@@ -36,8 +36,9 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 |--------|------|------|
 | USHStaminaSet | Lyra에 없는 스태미나 리소스를 GAS AttributeSet으로 직접 설계, 복제 지원 | 완료 |
 | USHStaminaComponent | 스태미나 상태 관리, Regen GE 최적화, OutOfStamina 태그 관리, 대쉬 스태미나 소비 및 차단 | 완료 |
-| GA_SHDash | 스태미나를 소비하는 대시 어빌리티 | 예정 |
 | WBP_SHStaminaBar | 스태미나 HUD 위젯 (CommonUI + GameplayMessage) | 완료 |
+| GA_SHMeleeAttack | C++ 근접 공격 어빌리티 — 몽타주 + AnimNotify 히트 판정 + GAS 비용/쿨다운 파이프라인 | 진행 중 |
+| DA_SHMeleeExperience | ULyraExperienceDefinition 기반 독립 게임모드 — 커스텀 Experience + Input + HUD 구성 | 진행 중 |
 
 ---
 
