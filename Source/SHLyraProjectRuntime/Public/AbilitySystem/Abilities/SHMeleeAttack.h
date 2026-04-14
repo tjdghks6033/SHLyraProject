@@ -20,13 +20,18 @@ struct FGameplayEventData;
  *   2. UAbilityTask_PlayMontageAndWait 로 AttackMontage 재생
  *   3. UAbilityTask_WaitGameplayEvent 로 'Event.SH.Melee.HitDetect' 대기
  *      → AnimNotify_GameplayEvent 가 해당 태그를 발화하면 OnGameplayEventReceived 호출
- *   4. PerformMeleeHit: 전방 구체 트레이스 → DamageEffect 적용
+ *   4. PerformMeleeHit: WeaponHilt → WeaponTip 소켓 기반 Sphere Sweep → DamageEffect 적용
+ *      (소켓이 없으면 캐릭터 전방 구체 트레이스로 폴백)
  *   5. 몽타주 완료/취소 → EndAbility
  *
  * 비용/쿨다운 설정:
  *   BP 자식 클래스(GA_SHMeleeAttack)에서
- *   CostGameplayEffectClass   = GE_SHMeleeStaminaCost
+ *   CostGameplayEffectClass     = GE_SHMeleeStaminaCost
  *   CooldownGameplayEffectClass = GE_SHMeleeCooldown 으로 지정한다.
+ *
+ * 소켓 설정:
+ *   BP_SHCharacter 의 WeaponMesh 컴포넌트에 WeaponHilt / WeaponTip 소켓을 추가한다.
+ *   소켓 이름은 WeaponMeshComponentName / HiltSocketName / TipSocketName 으로 변경 가능.
  *
  * 히트 판정은 서버(Authority)에서만 실행된다.
  */
@@ -84,11 +89,27 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee")
 	TSubclassOf<UGameplayEffect> DamageEffect;
 
-	// 구체 트레이스 반지름 (cm). 값이 클수록 판정 범위가 넓어진다.
-	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee", meta = (ClampMin = "1.0"))
-	float SphereTraceRadius = 50.0f;
+	// 무기 메시 컴포넌트 이름. BP_SHCharacter 의 Static Mesh Component 이름과 일치해야 한다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee|Socket")
+	FName WeaponMeshComponentName = FName("WeaponMesh");
 
-	// 캐릭터 전방으로의 트레이스 거리 (cm).
+	// 트레이스 시작 소켓 이름 (손잡이 끝).
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee|Socket")
+	FName HiltSocketName = FName("WeaponHilt");
+
+	// 트레이스 종료 소켓 이름 (검 끝).
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee|Socket")
+	FName TipSocketName = FName("WeaponTip");
+
+	// Sweep 구체 반지름 (cm). 소켓 트레이스 및 폴백 구체 트레이스 모두에 적용.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee", meta = (ClampMin = "1.0"))
-	float SphereTraceRange = 150.0f;
+	float SweepRadius = 15.0f;
+
+	// 소켓이 없을 때 사용하는 폴백 트레이스 거리 (cm).
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee", meta = (ClampMin = "1.0"))
+	float FallbackTraceRange = 150.0f;
+
+	// 개발 중 트레이스 궤적 시각화 여부. 배포 빌드에서는 꺼야 한다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee|Debug")
+	bool bDrawDebugTrace = false;
 };

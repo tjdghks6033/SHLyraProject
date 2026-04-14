@@ -6,6 +6,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Components/StaticMeshComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "NativeGameplayTags.h"
 
@@ -109,28 +110,63 @@ void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
 		return;
 	}
 
-	// 캐릭터 중심 높이(60cm 오프셋)에서 전방으로 구체 트레이스
-	const FVector TraceStart = AvatarActor->GetActorLocation() + FVector(0.f, 0.f, 60.f);
-	const FVector TraceEnd   = TraceStart + AvatarActor->GetActorForwardVector() * SphereTraceRange;
+	// WeaponMesh 컴포넌트에서 소켓 위치를 가져온다.
+	// 소켓이 없으면 캐릭터 전방 구체 트레이스로 폴백한다.
+	FVector TraceStart;
+	FVector TraceEnd;
+
+	UActorComponent* FoundComponent = AvatarActor->GetComponentByClass(UStaticMeshComponent::StaticClass());
+	UStaticMeshComponent* WeaponMesh = nullptr;
+
+	// 이름으로 정확히 찾기
+	for (UActorComponent* Comp : AvatarActor->GetComponents())
+	{
+		if (Comp->GetFName() == WeaponMeshComponentName)
+		{
+			WeaponMesh = Cast<UStaticMeshComponent>(Comp);
+			break;
+		}
+	}
+
+	const bool bHasSockets = WeaponMesh
+		&& WeaponMesh->DoesSocketExist(HiltSocketName)
+		&& WeaponMesh->DoesSocketExist(TipSocketName);
+
+	if (bHasSockets)
+	{
+		// 소켓 기반 Sweep: WeaponHilt → WeaponTip
+		TraceStart = WeaponMesh->GetSocketLocation(HiltSocketName);
+		TraceEnd   = WeaponMesh->GetSocketLocation(TipSocketName);
+	}
+	else
+	{
+		// 폴백: 캐릭터 중심(60cm 높이)에서 전방으로 구체 트레이스
+		TraceStart = AvatarActor->GetActorLocation() + FVector(0.f, 0.f, 60.f);
+		TraceEnd   = TraceStart + AvatarActor->GetActorForwardVector() * FallbackTraceRange;
+	}
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	const EDrawDebugTrace::Type DebugType = bDrawDebugTrace
+		? EDrawDebugTrace::ForDuration
+		: EDrawDebugTrace::None;
 
 	TArray<FHitResult> HitResults;
 	UKismetSystemLibrary::SphereTraceMultiForObjects(
 		AvatarActor,
 		TraceStart,
 		TraceEnd,
-		SphereTraceRadius,
+		SweepRadius,
 		ObjectTypes,
-		false,                    // bTraceComplex
-		TArray<AActor*>(),        // ActorsToIgnore (bIgnoreSelf 가 자신을 제외)
-		EDrawDebugTrace::None,
+		false,               // bTraceComplex
+		TArray<AActor*>(),   // ActorsToIgnore (bIgnoreSelf 가 자신을 제외)
+		DebugType,
 		HitResults,
-		true                      // bIgnoreSelf
+		true                 // bIgnoreSelf
 	);
 
-	// 한 번의 공격에서 같은 대상에게 중복 데미지를 방지
+	// 한 번의 공격에서 같은 대상에게 중복 데미지 방지
 	TSet<AActor*> DamagedActors;
 
 	for (const FHitResult& Hit : HitResults)
