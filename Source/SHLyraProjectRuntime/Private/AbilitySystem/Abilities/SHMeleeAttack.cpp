@@ -115,7 +115,6 @@ void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
 	FVector TraceStart;
 	FVector TraceEnd;
 
-	UActorComponent* FoundComponent = AvatarActor->GetComponentByClass(UStaticMeshComponent::StaticClass());
 	UStaticMeshComponent* WeaponMesh = nullptr;
 
 	// 이름으로 정확히 찾기
@@ -179,6 +178,7 @@ void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
 
 		UAbilitySystemComponent* TargetASC =
 			UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
+
 		if (!TargetASC)
 		{
 			continue;
@@ -190,8 +190,7 @@ void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
 
 		if (SpecHandle.IsValid())
 		{
-			InstigatorASC->ApplyGameplayEffectSpecToTarget(
-				*SpecHandle.Data.Get(), TargetASC);
+			InstigatorASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 		}
 
 		DamagedActors.Add(HitActor);
