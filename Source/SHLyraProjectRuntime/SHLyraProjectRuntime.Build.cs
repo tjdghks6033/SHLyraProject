@@ -27,6 +27,8 @@ public class SHLyraProjectRuntime : ModuleRules
 			"CommonGame",
 			"CommonUI",
 			"GameplayMessageRuntime",
+			"AIModule",
+			"NavigationSystem",
 		});
 	}
 }

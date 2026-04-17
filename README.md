@@ -40,6 +40,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | GA_SHMeleeAttack | C++ 근접 공격 어빌리티 — 몽타주 + AnimNotify 히트 판정 + GAS 비용/쿨다운 파이프라인 | 진행 중 |
 | GA_SHDash | C++ 4방향 대쉬 어빌리티 — 입력 방향 판정 + RootMotion(CMC 예측 호환) + 스태미나/쿨다운 연동 | 완료 |
 | DA_SHMeleeExperience | ULyraExperienceDefinition 기반 독립 게임모드 — 커스텀 Experience + Input + HUD 구성 | 진행 중 |
+| ASHEnemyCharacter / AI | ACharacter 직접 상속 + IAbilitySystemInterface — GAS 체력 피격/사망, AIPerception 추적, Experience 연동 스폰 시스템 | 진행 중 |
 
 ---
 
