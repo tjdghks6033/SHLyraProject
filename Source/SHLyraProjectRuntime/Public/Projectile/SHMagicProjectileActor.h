@@ -10,6 +10,7 @@ class USphereComponent;
 class UProjectileMovementComponent;
 class UGameplayEffect;
 class UAbilitySystemComponent;
+class UNiagaraSystem;
 
 /**
  * ASHMagicProjectileActor
@@ -47,12 +48,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile")
 	bool bDestroyOnHit = true;
 
+	// 충돌 지점에 스폰할 임팩트 Niagara 이펙트. BP 자식 클래스에서 지정한다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile")
+	TObjectPtr<UNiagaraSystem> ImpactEffect;
+
 private:
 
+	// Pawn 등 Overlap 대상에 충돌 시 (데미지 + 임팩트 VFX)
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
+
+	// 벽 등 Block 대상에 충돌해 ProjectileMovement가 멈췄을 때 (임팩트 VFX만)
+	UFUNCTION()
+	void OnProjectileStopped(const FHitResult& ImpactResult);
+
+	void SpawnImpactEffect(const FVector& Location);
+	void DestroyProjectile();
 
 	TSubclassOf<UGameplayEffect> DamageEffect;
 	TWeakObjectPtr<UAbilitySystemComponent> InstigatorASC;

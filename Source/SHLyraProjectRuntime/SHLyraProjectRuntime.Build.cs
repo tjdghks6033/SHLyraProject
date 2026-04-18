@@ -29,6 +29,7 @@ public class SHLyraProjectRuntime : ModuleRules
 			"GameplayMessageRuntime",
 			"AIModule",
 			"NavigationSystem",
+			"Niagara",
 		});
 	}
 }

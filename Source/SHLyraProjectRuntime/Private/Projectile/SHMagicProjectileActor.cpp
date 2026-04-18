@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 ASHMagicProjectileActor::ASHMagicProjectileActor()
 {
@@ -34,6 +35,7 @@ void ASHMagicProjectileActor::InitProjectile(UAbilitySystemComponent* InInstigat
 	AbilityLevel = InAbilityLevel;
 
 	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &ASHMagicProjectileActor::OnSphereOverlap);
+	ProjectileMovement->OnProjectileStop.AddDynamic(this, &ASHMagicProjectileActor::OnProjectileStopped);
 }
 
 void ASHMagicProjectileActor::OnSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -68,6 +70,36 @@ void ASHMagicProjectileActor::OnSphereOverlap(UPrimitiveComponent* OverlappedCom
 
 	if (bDestroyOnHit)
 	{
-		Destroy();
+		SpawnImpactEffect(GetActorLocation());
+		DestroyProjectile();
 	}
+}
+
+void ASHMagicProjectileActor::OnProjectileStopped(const FHitResult& ImpactResult)
+{
+	// 벽/지형 등 Block 대상 충돌 — 데미지 없이 임팩트 VFX만 재생
+	if (bDestroyOnHit)
+	{
+		SpawnImpactEffect(ImpactResult.ImpactPoint);
+		DestroyProjectile();
+	}
+}
+
+void ASHMagicProjectileActor::SpawnImpactEffect(const FVector& Location)
+{
+	if (ImpactEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			this, ImpactEffect, Location, GetActorRotation());
+	}
+}
+
+void ASHMagicProjectileActor::DestroyProjectile()
+{
+	// ProjectileMovement 비활성화 후 파괴 — 이동 중 중복 충돌 방지
+	if (ProjectileMovement)
+	{
+		ProjectileMovement->StopMovementImmediately();
+	}
+	Destroy();
 }
