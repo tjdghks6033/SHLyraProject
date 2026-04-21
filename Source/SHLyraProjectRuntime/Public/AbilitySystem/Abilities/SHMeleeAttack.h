@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/LyraGameplayAbility.h"
+#include "AbilitySystem/Abilities/SHGameplayAbility.h"
 
 #include "SHMeleeAttack.generated.h"
 
@@ -36,7 +36,7 @@ struct FGameplayEventData;
  * 히트 판정은 서버(Authority)에서만 실행된다.
  */
 UCLASS()
-class SHLYRAPROJECTRUNTIME_API USHMeleeAttack : public ULyraGameplayAbility
+class SHLYRAPROJECTRUNTIME_API USHMeleeAttack : public USHGameplayAbility
 {
 	GENERATED_BODY()
 

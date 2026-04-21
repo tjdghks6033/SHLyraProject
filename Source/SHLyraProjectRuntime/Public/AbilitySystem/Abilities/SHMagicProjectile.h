@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/Abilities/LyraGameplayAbility.h"
+#include "AbilitySystem/Abilities/SHGameplayAbility.h"
 
 #include "SHMagicProjectile.generated.h"
 
@@ -36,7 +36,7 @@ struct FGameplayEventData;
  *   소켓이 없으면 캐릭터 위치 + SpawnOffset 위치에서 전방으로 발사한다.
  */
 UCLASS()
-class SHLYRAPROJECTRUNTIME_API USHMagicProjectile : public ULyraGameplayAbility
+class SHLYRAPROJECTRUNTIME_API USHMagicProjectile : public USHGameplayAbility
 {
 	GENERATED_BODY()
 
