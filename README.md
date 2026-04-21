@@ -45,6 +45,9 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `BP_SHCharacter` | `B_Hero_Default` 상속 커스텀 캐릭터 — SKM_Manny + 사이버 검 부착 + 소드 트레일 VFX | 완료 |
 | `ASHEnemyCharacter` / AI | GAS 체력 피격/사망, AIPerception 추적, Experience 연동 스폰 시스템 | 완료 |
 | `GA_SHMagicProjectile` | C++ 마법 발사체 어빌리티 — 캐스팅 몽타주 + AnimNotify 스폰 + ProjectileMovement + 충돌 데미지 | 진행 중 |
+| `USHManaSet` | 마법 어빌리티 자원 — GAS AttributeSet(Mana/MaxMana/ManaCost), 복제 지원 | 완료 |
+| `USHManaComponent` | 마나 상태 관리, Regen GE 최적화, OutOfMana 태그, `Ability.Type.Action.Magic` 차단 | 완료 |
+| `WBP_SHManaBar` | 마나 HUD 위젯 — `SH.Message.Mana.Changed` 구독, 스태미나 바 패턴 동일 | 완료 |
 
 ---
 
