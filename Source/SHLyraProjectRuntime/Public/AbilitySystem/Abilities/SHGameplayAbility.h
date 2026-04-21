@@ -6,6 +6,8 @@
 
 #include "SHGameplayAbility.generated.h"
 
+class ACharacter;
+
 /**
  * USHGameplayAbility
  *
@@ -14,9 +16,15 @@
  * 제공 기능:
  *   - bLockMovementOnActivate: 활성 동안 캐릭터 MaxWalkSpeed를
  *     LockedWalkSpeed로 낮춰 '커밋형' 어빌리티(근접 공격, 캐스트 마법 등)의
- *     타격감을 만든다. EndAbility에서 원래 속도로 복원한다.
+ *     타격감을 만든다. EndAbility에서 캐릭터 클래스 CDO 의 기본값으로 복원.
  *
  * 대쉬처럼 이동 자체가 목적인 어빌리티는 bLockMovementOnActivate=false로 둔다.
+ *
+ * 설계 메모:
+ *   런타임 값을 캐시하지 않고 CDO 기본값으로 복원한다.
+ *   → 중복 활성/이벤트 누락으로 인한 '락 스턱' 버그가 구조적으로 발생하지 않는다.
+ *   → 단점: 다른 시스템이 런타임에 속도를 수정하고 있었다면 그 값도 함께 리셋됨.
+ *     (현 프로젝트에는 해당 케이스 없음)
  */
 UCLASS(Abstract)
 class SHLYRAPROJECTRUNTIME_API USHGameplayAbility : public ULyraGameplayAbility
@@ -54,11 +62,6 @@ protected:
 
 private:
 
-	// ActivateAbility 시점에 저장한 원래 MaxWalkSpeed. EndAbility에서 복원용.
-	UPROPERTY(Transient)
-	float CachedWalkSpeed = 0.0f;
-
-	// 이번 Activate 사이클에서 속도를 실제로 변경했는지. 중복/누락 복원 방지.
-	UPROPERTY(Transient)
-	bool bWalkSpeedModified = false;
+	// 락을 건 캐릭터. ActorInfo 의존 없이 EndAbility 에서 안전하게 복원하기 위해 보관.
+	TWeakObjectPtr<ACharacter> LockedCharacter;
 };

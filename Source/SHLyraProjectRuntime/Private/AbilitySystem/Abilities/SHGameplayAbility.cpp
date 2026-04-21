@@ -22,16 +22,16 @@ void USHGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		return;
 	}
 
-	// CharacterMovementComponent의 MaxWalkSpeed를 잠근다.
-	// 클라/서버 모두 동일하게 적용하므로 복제 예측과 충돌하지 않는다.
-	if (const ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
+	if (!Character)
 	{
-		if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
-		{
-			CachedWalkSpeed = Movement->MaxWalkSpeed;
-			Movement->MaxWalkSpeed = LockedWalkSpeed;
-			bWalkSpeedModified = true;
-		}
+		return;
+	}
+
+	if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+	{
+		Movement->MaxWalkSpeed = LockedWalkSpeed;
+		LockedCharacter = Character;
 	}
 }
 
@@ -40,17 +40,19 @@ void USHGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (bWalkSpeedModified && ActorInfo)
+	if (ACharacter* Character = LockedCharacter.Get())
 	{
-		if (const ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+		if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
 		{
-			if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+			// 캐릭터 클래스 CDO 의 CMC 기본 MaxWalkSpeed 로 복원.
+			const ACharacter* CharCDO = Character->GetClass()->GetDefaultObject<ACharacter>();
+			if (const UCharacterMovementComponent* DefaultMovement = CharCDO ? CharCDO->GetCharacterMovement() : nullptr)
 			{
-				Movement->MaxWalkSpeed = CachedWalkSpeed;
+				Movement->MaxWalkSpeed = DefaultMovement->MaxWalkSpeed;
 			}
 		}
-		bWalkSpeedModified = false;
 	}
+	LockedCharacter.Reset();
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
