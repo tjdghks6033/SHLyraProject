@@ -43,7 +43,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `DA_SHMeleeExperience` | `ULyraExperienceDefinition` 기반 독립 게임모드 — ShooterCore 의존 없는 완전 독립 Experience | 완료 |
 | `W_SHMeleeHUDLayout` | `LyraHUDLayout` 상속 커스텀 HUD 레이아웃 — ShooterCore HUD 없이 독립 동작 | 완료 |
 | `BP_SHCharacter` | `B_Hero_Default` 상속 커스텀 캐릭터 — SKM_Manny + 사이버 검 부착 + 소드 트레일 VFX | 완료 |
-| `ASHEnemyCharacter` / AI | GAS 체력 피격/사망, AIPerception 추적, Experience 연동 스폰 시스템 | 완료 |
+| `ASHEnemyBase` / AI 계층 | `ALyraCharacter` 기반 Base/Bot/Boss 계층 + `AAIController` + `ILyraTeamAgentInterface` 직접 구현 봇 컨트롤러 계층 (Lyra 내부 `ALyraPlayerBotController`가 외부 모듈 C++ 상속 불가하여 동등 역할 재현) | 진행 중 |
 | `GA_SHMagicProjectile` | C++ 마법 발사체 어빌리티 — 캐스팅 몽타주 + AnimNotify 스폰 + ProjectileMovement + 충돌 데미지 | 진행 중 |
 | `USHManaSet` | 마법 어빌리티 자원 — GAS AttributeSet(Mana/MaxMana/ManaCost), 복제 지원 | 완료 |
 | `USHManaComponent` | 마나 상태 관리, Regen GE 최적화, OutOfMana 태그, `Ability.Type.Action.Magic` 차단 | 완료 |
@@ -83,11 +83,15 @@ SHLyraProject (GameFeaturePlugin)
             │               ├── SHMeleeAttack — 몽타주 + AnimNotify + Sweep Trace + GE 적용
             │               └── SHDash        — 4방향 판정 + RootMotionConstantForce
             ├── Enemy/
-            │       ├── SHEnemyCharacter      — GAS 체력, 피격/사망 처리
-            │       ├── SHEnemySpawnerComponent
-            │       └── SHEnemySpawnPoint
-            └── AI/
-                    └── SHEnemyAIController   — AIPerception 기반 플레이어 추적
+            │       ├── SHEnemyBase           — ALyraCharacter 상속, 팀 색상 MID 주입, 사망 지연 파괴
+            │       ├── SHEnemyBot            — 졸개 (확장점)
+            │       └── SHEnemyBoss           — 보스 (뼈대, Phase 관리 예정)
+            ├── AI/
+            │       ├── SHEnemyControllerBase — AAIController + ILyraTeamAgentInterface 직접 구현
+            │       ├── SHBotController       — Tick 기반 MoveToActor
+            │       └── SHBossController      — BehaviorTree 기반 (뼈대)
+            └── Teams/
+                    └── SHLyraProjectTeamIds  — Team 0 (Player) / Team 10 (SHEnemy) 상수
 ```
 
 ### GameFeature 주입 흐름
