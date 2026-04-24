@@ -48,6 +48,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `USHManaSet` | 마법 어빌리티 자원 — GAS AttributeSet(Mana/MaxMana/ManaCost), 복제 지원 | 완료 |
 | `USHManaComponent` | 마나 상태 관리, Regen GE 최적화, OutOfMana 태그, `Ability.Type.Action.Magic` 차단 | 완료 |
 | `WBP_SHManaBar` | 마나 HUD 위젯 — `SH.Message.Mana.Changed` 구독, 스태미나 바 패턴 동일 | 완료 |
+| `WBP_SHSkillBar` / `WBP_SHSkillSlot` | Q/W/E/R 스킬 액션바 — 쿨다운 방사형 오버레이 + 마나 부족 점멸, UIExtension 주입 | 진행 중 |
 
 ---
 
