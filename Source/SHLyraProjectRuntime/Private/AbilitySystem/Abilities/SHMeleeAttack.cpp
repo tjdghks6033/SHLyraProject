@@ -185,8 +185,10 @@ void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
 		}
 
 		// 어빌리티 컨텍스트(인스티게이터, 레벨 등)가 담긴 GE 스펙 생성 후 대상에 적용
+		FGameplayEffectContextHandle Context = InstigatorASC->MakeEffectContext();
+		Context.AddHitResult(Hit);
 		FGameplayEffectSpecHandle SpecHandle =
-			MakeOutgoingGameplayEffectSpec(DamageEffect, GetAbilityLevel());
+			InstigatorASC->MakeOutgoingSpec(DamageEffect, GetAbilityLevel(), Context);
 
 		if (SpecHandle.IsValid())
 		{

@@ -57,8 +57,10 @@ void ASHMagicProjectileActor::OnSphereOverlap(UPrimitiveComponent* OverlappedCom
 
 	if (TargetASC && InstigatorASC.IsValid() && DamageEffect)
 	{
+		FGameplayEffectContextHandle Context = InstigatorASC->MakeEffectContext();
+		Context.AddHitResult(SweepResult);
 		FGameplayEffectSpecHandle SpecHandle =
-			InstigatorASC->MakeOutgoingSpec(DamageEffect, AbilityLevel, InstigatorASC->MakeEffectContext());
+			InstigatorASC->MakeOutgoingSpec(DamageEffect, AbilityLevel, Context);
 
 		if (SpecHandle.IsValid())
 		{
