@@ -44,11 +44,13 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `W_SHMeleeHUDLayout` | `LyraHUDLayout` 상속 커스텀 HUD 레이아웃 — ShooterCore HUD 없이 독립 동작 | 완료 |
 | `BP_SHCharacter` | `B_Hero_Default` 상속 커스텀 캐릭터 — SKM_Manny + 사이버 검 부착 + 소드 트레일 VFX | 완료 |
 | `ASHEnemyBase` / AI 계층 | `ALyraCharacter` 기반 Base/Bot/Boss 계층 + `AAIController` + `ILyraTeamAgentInterface` 직접 구현 봇 컨트롤러 계층 (Lyra 내부 `ALyraPlayerBotController`가 외부 모듈 C++ 상속 불가하여 동등 역할 재현) | 진행 중 |
-| `GA_SHIceBoltProjectile` | C++ 마법 발사체 어빌리티 — 캐스팅 몽타주 + AnimNotify 스폰 + ProjectileMovement + 충돌 데미지 | 진행 중 |
+| `GA_SHIceBoltProjectile` | C++ 마법 발사체 어빌리티 — 캐스팅 몽타주 + AnimNotify 스폰 + ProjectileMovement + LyraDamageExecution 파이프라인 | 완료 |
 | `USHManaSet` | 마법 어빌리티 자원 — GAS AttributeSet(Mana/MaxMana/ManaCost), 복제 지원 | 완료 |
 | `USHManaComponent` | 마나 상태 관리, Regen GE 최적화, OutOfMana 태그, `Ability.Type.Action.Magic` 차단 | 완료 |
 | `WBP_SHManaBar` | 마나 HUD 위젯 — `SH.Message.Mana.Changed` 구독, 스태미나 바 패턴 동일 | 완료 |
-| `WBP_SHSkillBar` / `WBP_SHSkillSlot` | Q/W/E/R 스킬 액션바 — 쿨다운 방사형 오버레이 + 마나 부족 점멸, UIExtension 주입 | 진행 중 |
+| `WBP_SHSkillBar` / `WBP_SHSkillSlot` | Q/W/E/R 스킬 액션바 — 쿨다운 방사형 오버레이, UIExtension 주입 | 완료 |
+| Floating Damage Numbers | `GCNL_Character_DamageTaken` + `B_NiagaraNumberPopComponent` — Lyra 내장 파이프라인 활용, `LyraDamageExecution` → `Lyra.Damage.Message` 브로드캐스트 연동 | 완료 |
+| `GA_SHFireballProjectile` | 화염 발사체 어빌리티 — E 슬롯 프로토타입, Free Magic VFX 적용 | 진행 중 |
 
 ---
 
