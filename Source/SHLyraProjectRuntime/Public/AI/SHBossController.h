@@ -23,4 +23,8 @@ class SHLYRAPROJECTRUNTIME_API ASHBossController : public ASHEnemyControllerBase
 public:
 
 	ASHBossController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+
+protected:
+
+	virtual void InitPlayerState() override;
 };
