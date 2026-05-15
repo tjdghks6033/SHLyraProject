@@ -50,7 +50,8 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `WBP_SHManaBar` | 마나 HUD 위젯 — `SH.Message.Mana.Changed` 구독, 스태미나 바 패턴 동일 | 완료 |
 | `WBP_SHSkillBar` / `WBP_SHSkillSlot` | Q/W/E/R 스킬 액션바 — 쿨다운 방사형 오버레이, UIExtension 주입 | 완료 |
 | Floating Damage Numbers | `GCNL_Character_DamageTaken` + `B_NiagaraNumberPopComponent` — Lyra 내장 파이프라인 활용, `LyraDamageExecution` → `Lyra.Damage.Message` 브로드캐스트 연동 | 완료 |
-| `GA_SHFireballProjectile` | 화염 발사체 어빌리티 — E 슬롯 프로토타입, Free Magic VFX 적용 | 진행 중 |
+| `GA_SHFireballProjectile` | 화염 발사체 어빌리티 — E 슬롯 프로토타입, Free Magic VFX 적용 | 완료 |
+| CyberSword 팀 컬러 머티리얼 | `Team.WeaponTint` 파라미터 추가 — Desaturate + 팀컬러 Multiply로 텍스처 형태 유지하며 Ice(하늘색)/Fire(주황) 분리, `BP_SHEnemyBoss` WeaponMesh 부착 | 완료 |
 
 ---
 
