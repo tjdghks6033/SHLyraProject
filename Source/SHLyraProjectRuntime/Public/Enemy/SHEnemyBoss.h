@@ -43,6 +43,7 @@ protected:
 
 	virtual void BeginPlay() override;
 	virtual void OnAbilitySystemInitialized() override;
+	virtual void OnDeathStarted(AActor* OwningActor) override;
 
 	// 보스 HUD 상단에 표시되는 이름.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Boss")
