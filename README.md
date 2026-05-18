@@ -1,19 +1,26 @@
 # SHLyraProject
 
-> Lyra Starter Game (UE5) 기반 커스텀 Game Feature Plugin
+> Lyra Starter Game (UE5) 기반 커스텀 Game Feature Plugin — 포트폴리오 프로젝트
 
 ---
 
 ## 개요
 
 Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
-**라이라 소스를 일절 수정하지 않고** `GameFeaturePlugin` 시스템을 통해 기능을 확장한 포트폴리오 프로젝트입니다.
+**라이라 소스를 일절 수정하지 않고** `GameFeaturePlugin` 시스템을 통해 기능을 확장한 프로젝트입니다.
 
-### 핵심 설계 원칙
-- 라이라 코어 코드 **무수정 (Zero Modification)**
-- `GameFeatureAction`으로 컴포넌트 / 어빌리티 / UI 동적 주입
-- `GAS (Gameplay Ability System)` 기반 스태미나 리소스 설계
-- 멀티플레이어를 고려한 `Replication` 설계
+플레이어는 얼음(하늘색) 속성의 근접·마법 어빌리티로 싸우고,
+보스는 화염(주황) 속성의 BehaviorTree 기반 AI로 거리와 HP에 따라 패턴을 전환합니다.
+
+---
+
+## 핵심 설계 원칙
+
+- **Zero Modification** — `Source/LyraGame/` 및 에픽 플러그인 파일 무수정. 모든 기능은 `GameFeatureAction` 주입
+- **GAS 완전 활용** — 커스텀 `AttributeSet`(Stamina, Mana), `GameplayAbility`, `GameplayEffect`, `GameplayCue` 파이프라인 구성
+- **Lyra 아키텍처 준수** — `ULyraExperienceDefinition`, `ULyraAbilitySet`, `LyraDamageExecution` 등 라이라 기존 시스템과 통합
+- **보스 AI** — `BehaviorTree` + 거리/HP 기반 Phase 패턴, `BTDecorator` 커스텀 C++
+- **Replication 고려** — `AttributeSet` 복제, `GameplayMessage` 브로드캐스트, CMC 예측 호환 이동
 
 ---
 
@@ -21,40 +28,58 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 
 ```
 1. Epic Games Launcher에서 Lyra Starter Game 5.x 설치
-2. 프로젝트 루트의 Plugins/GameFeatures/ 폴더에 이 레포 클론
-   git clone https://github.com/[your-id]/SHLyraProject
+2. Plugins/GameFeatures/ 폴더에 이 레포 클론
+   git clone https://github.com/tjdghks6033/SHLyraProject
 3. LyraStarterGame.uproject 우클릭 → Generate Visual Studio project files
-4. 언리얼 에디터 실행
-5. Edit > Plugins > SHLyraProject 활성화
-6. L_SH_Expanse 맵을 열어 PIE 실행
+4. 언리얼 에디터 실행 → L_SH_Expanse 맵을 열어 PIE 실행
 ```
 
 ---
 
 ## 구현 시스템
 
-| 시스템 | 설명 | 상태 |
-|--------|------|------|
-| `USHStaminaSet` | Lyra에 없는 스태미나 리소스를 GAS AttributeSet으로 직접 설계, 복제 지원 | 완료 |
-| `USHStaminaComponent` | 스태미나 상태 관리, Regen GE 최적화, OutOfStamina 태그 관리, 대쉬 스태미나 소비 및 차단 | 완료 |
-| `WBP_SHStaminaBar` | 스태미나 HUD 위젯 — CommonUI + GameplayMessage 기반, 4종 애니메이션 | 완료 |
-| `GA_SHMeleeAttack` | C++ 근접 공격 어빌리티 — 몽타주 + AnimNotify 히트 판정 + WeaponSocket Sweep Trace + GAS 비용/쿨다운 파이프라인 | 완료 |
-| `GA_SHDash` | C++ 4방향 대쉬 어빌리티 — 입력 방향 판정 + RootMotion(CMC 예측 호환) + 스태미나/쿨다운 연동 | 완료 |
-| `DA_SHMeleeExperience` | `ULyraExperienceDefinition` 기반 독립 게임모드 — ShooterCore 의존 없는 완전 독립 Experience | 완료 |
-| `W_SHMeleeHUDLayout` | `LyraHUDLayout` 상속 커스텀 HUD 레이아웃 — ShooterCore HUD 없이 독립 동작 | 완료 |
-| `BP_SHCharacter` | `B_Hero_Default` 상속 커스텀 캐릭터 — SKM_Manny + 사이버 검 부착 + 소드 트레일 VFX | 완료 |
-| `ASHEnemyBase` / AI 계층 | `ALyraCharacter` 기반 Base/Bot/Boss 계층 + `AAIController` + `ILyraTeamAgentInterface` 직접 구현 봇 컨트롤러 계층 (Lyra 내부 `ALyraPlayerBotController`가 외부 모듈 C++ 상속 불가하여 동등 역할 재현) | 진행 중 |
-| `GA_SHIceBoltProjectile` | C++ 마법 발사체 어빌리티 — 캐스팅 몽타주 + AnimNotify 스폰 + ProjectileMovement + LyraDamageExecution 파이프라인 | 완료 |
-| `USHManaSet` | 마법 어빌리티 자원 — GAS AttributeSet(Mana/MaxMana/ManaCost), 복제 지원 | 완료 |
-| `USHManaComponent` | 마나 상태 관리, Regen GE 최적화, OutOfMana 태그, `Ability.Type.Action.Magic` 차단 | 완료 |
-| `WBP_SHManaBar` | 마나 HUD 위젯 — `SH.Message.Mana.Changed` 구독, 스태미나 바 패턴 동일 | 완료 |
-| `WBP_SHSkillBar` / `WBP_SHSkillSlot` | Q/W/E/R 스킬 액션바 — 쿨다운 방사형 오버레이, UIExtension 주입 | 완료 |
-| Floating Damage Numbers | `GCNL_Character_DamageTaken` + `B_NiagaraNumberPopComponent` — Lyra 내장 파이프라인 활용, `LyraDamageExecution` → `Lyra.Damage.Message` 브로드캐스트 연동 | 완료 |
-| `GA_SHFireballProjectile` | 화염 발사체 어빌리티 — E 슬롯 프로토타입, Free Magic VFX 적용 | 완료 |
-| CyberSword 팀 컬러 머티리얼 | `Team.WeaponTint` 파라미터 추가 — Desaturate + 팀컬러 Multiply로 텍스처 형태 유지하며 Ice(하늘색)/Fire(주황) 분리, `BP_SHEnemyBoss` WeaponMesh 부착 | 완료 |
-| `GA_SHBossMelee` | 보스 근접 어빌리티 — AnimNotify(`Event.SH.Boss.HitDetect`) 히트 판정 + `hand_r` 소켓 기준 SphereTrace + `GE_SHBossMeleeDamage` 적용 | 완료 |
-| 보스 AI 패턴 강화 | `ASHBossController::OnHealthChanged` → `BB_HPPercent` 갱신, `BTDecorator_SHCheckDistance` 거리 체크, `BT_SHBoss` 거리+페이즈 분기 재설계 | 완료 |
-| `BTTask_SHActivateAbility` 개선 | `bWaitForAbilityEnd` 옵션 추가 — 어빌리티 종료 시까지 BT 대기(latent), 몽타주 도중 패턴 전환 방지 | 완료 |
+### 플레이어 어빌리티
+
+| 시스템 | 설명 |
+|--------|------|
+| `GA_SHMeleeAttack` | 몽타주 + AnimNotify 히트 판정 + WeaponSocket Sweep Trace + GAS 비용/쿨다운 |
+| `GA_SHDash` | 4방향 입력 판정 + RootMotionConstantForce (CMC 예측 호환) + 스태미나 연동 |
+| `GA_SHIceBoltProjectile` | 캐스팅 몽타주 + AnimNotify 스폰 + ProjectileMovement + LyraDamageExecution |
+| `GA_SHFireballProjectile` | 화염 발사체 어빌리티 (E 슬롯), Niagara VFX 적용 |
+
+### 리소스 시스템 (GAS AttributeSet)
+
+| 시스템 | 설명 |
+|--------|------|
+| `USHStaminaSet` / `USHStaminaComponent` | Stamina/MaxStamina/StaminaCost 어트리뷰트, Regen GE 최적화, OutOfStamina 태그 관리 |
+| `USHManaSet` / `USHManaComponent` | Mana/MaxMana 어트리뷰트, OutOfMana 태그, 마법 어빌리티 발동 차단 |
+
+### 보스 시스템
+
+| 시스템 | 설명 |
+|--------|------|
+| `ASHEnemyBoss` + `ASHBossSpawner` | Experience 로드 후 보스 스폰, PawnData 수동 주입, ASC 초기화 직접 호출 |
+| `ASHBossController` + `BT_SHBoss` | BehaviorTree 기반 AI — HP/거리 조건으로 Phase 1/2 패턴 전환 |
+| `BTDecorator_SHCheckDistance` | 보스↔플레이어 거리 비교 커스텀 C++ Decorator |
+| `BTTask_SHActivateAbility` | `TryActivateAbilitiesByTag` 래핑 범용 BT 노드, `bWaitForAbilityEnd` latent 옵션 |
+| `GA_SHBossMelee` | AnimNotify(`Event.SH.Boss.HitDetect`) + `hand_r` 소켓 SphereTrace + GE 적용 |
+
+### HUD / UI
+
+| 시스템 | 설명 |
+|--------|------|
+| `W_SHMeleeHUDLayout` | `LyraHUDLayout` 상속, ShooterCore 없이 독립 동작, UIExtension 슬롯 구성 |
+| `WBP_SHSkillBar` / `WBP_SHSkillSlot` | Q/W/E/R 스킬 액션바 — 방사형 쿨다운 오버레이, `Effect Tag Query` 방식 |
+| `WBP_SHBossHealthBar` | `SH.Message.Boss.Engaged` 구독 → 보스 액터 바인딩, 실시간 HP 갱신 |
+| Floating Damage Numbers | `GCNL_Character_DamageTaken` + `B_NiagaraNumberPopComponent` (Lyra 내장 파이프라인) |
+
+### 기반 시스템
+
+| 시스템 | 설명 |
+|--------|------|
+| `DA_SHMeleeExperience` | `ULyraExperienceDefinition` 기반 독립 게임모드 — ShooterCore 의존 없음 |
+| `ASHEnemyBase` / Bot 계층 | `ALyraCharacter` 기반, `ILyraTeamAgentInterface` 직접 구현, 팀 컬러 MID 주입 |
+| CyberSword 팀 컬러 머티리얼 | `Team.WeaponTint` Vector Parameter — Desaturate + Multiply로 Ice(하늘색)/Fire(주황) 분리 |
 
 ---
 
@@ -63,125 +88,82 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 ```
 SHLyraProject (GameFeaturePlugin)
     │
-    ├── GameFeatureData (SHLyraProject)
-    │       └── GameFeatureActions
-    │               ├── AddComponents  → ALyraCharacter에 USHStaminaComponent 부착
-    │               ├── AddAbilities   → ALyraPlayerState에 DA_SHAbilitySet 부여 (USHStaminaSet 포함)
-    │               │                  → ALyraPlayerState에 DA_SHCombatAbilitySet 부여 (GA_SHMeleeAttack, GA_SHDash 포함)
-    │               ├── AddInputContextMapping → IMC_SHMelee (근접 공격 입력)
-    │               ├── AddInputBind          → InputData_SHMelee_AddOns
-    │               └── AddWidgets     → UIExtension 슬롯에 WBP_SHStaminaBar 주입
-    │
-    ├── DA_SHMeleeExperience (독립 게임모드)
+    ├── DA_SHMeleeExperience (독립 Experience)
     │       ├── DefaultPawnData → DA_SHPawnData → BP_SHCharacter
-    │       ├── GameFeaturesToEnable → ["SHLyraProject"] (ShooterCore 미포함)
+    │       ├── GameFeaturesToEnable → ["SHLyraProject"]   (ShooterCore 미포함)
     │       └── ActionSets
-    │               ├── LAS_SHMelee_SharedInput       — IMC_Default + IMC_SHMelee
-    │               ├── LAS_SHMelee_StandardComponents — BP_SHStaminaComponent 부착
-    │               └── LAS_SHMelee_StandardHUD        — W_SHMeleeHUDLayout + WBP_SHStaminaBar
+    │               ├── LAS_SHMelee_SharedInput        — IMC_Default + IMC_SHMelee
+    │               ├── LAS_SHMelee_StandardComponents — StaminaComponent, ManaComponent 부착
+    │               └── LAS_SHMelee_StandardHUD        — HUDLayout + 전체 위젯 UIExtension 주입
+    │
+    ├── ASHBossSpawner (Experience 로드 후 보스 스폰)
+    │       ├── PawnExtComp::SetPawnData (Possess 전 수동 주입)
+    │       ├── InitializeAbilitySystem 직접 호출 (LyraHeroComponent 부재 우회)
+    │       └── GE_SHBossInitialize_Health (Healing 속성으로 초기 HP 설정)
     │
     └── Source/SHLyraProjectRuntime/
             ├── Character/
-            │       └── SHStaminaComponent   — StaminaSet 바인딩, Regen GE 관리, 대쉬 감지
+            │       ├── SHStaminaComponent   — Regen GE 최적화, OutOfStamina 태그
+            │       └── SHManaComponent      — Regen GE 최적화, OutOfMana 태그
             ├── AbilitySystem/
             │       ├── Attributes/
-            │       │       └── SHStaminaSet — Stamina / MaxStamina / StaminaCost 어트리뷰트
+            │       │       ├── SHStaminaSet — Stamina / MaxStamina / StaminaCost
+            │       │       └── SHManaSet    — Mana / MaxMana
             │       └── Abilities/
-            │               ├── SHMeleeAttack — 몽타주 + AnimNotify + Sweep Trace + GE 적용
-            │               └── SHDash        — 4방향 판정 + RootMotionConstantForce
+            │               ├── SHMeleeAttack       — 몽타주 + AnimNotify + SweepTrace
+            │               ├── SHDash              — RootMotionConstantForce
+            │               ├── SHMagicProjectile   — IceBolt 발사체
+            │               ├── SHFireballProjectile— Fireball 발사체
+            │               └── SHBossMeleeAttack   — 보스 근접 + SphereTrace
             ├── Enemy/
-            │       ├── SHEnemyBase           — ALyraCharacter 상속, 팀 색상 MID 주입, 사망 지연 파괴
-            │       ├── SHEnemyBot            — 졸개 (확장점)
-            │       └── SHEnemyBoss           — 보스 (뼈대, Phase 관리 예정)
+            │       ├── SHEnemyBase  — ALyraCharacter 상속, 팀 색상 MID 주입, 사망 처리
+            │       ├── SHEnemyBot   — 졸개 봇
+            │       └── SHEnemyBoss  — 보스 (Phase 관리, GE 초기화)
             ├── AI/
-            │       ├── SHEnemyControllerBase — AAIController + ILyraTeamAgentInterface 직접 구현
+            │       ├── SHEnemyControllerBase — AAIController + ILyraTeamAgentInterface
             │       ├── SHBotController       — Tick 기반 MoveToActor
-            │       └── SHBossController      — BehaviorTree 기반 (뼈대)
+            │       └── SHBossController      — BehaviorTree, OnHealthChanged → BB_HPPercent
             └── Teams/
-                    └── SHLyraProjectTeamIds  — Team 0 (Player) / Team 10 (SHEnemy) 상수
+                    └── SHLyraProjectTeamIds  — Team 0 (Player) / Team 10 (Enemy)
 ```
 
-### GameFeature 주입 흐름
+### GAS 주입 흐름
 
 ```
 게임 시작
-  → ALyraPlayerState 생성 → ASC 초기화 완료 → NAME_LyraAbilityReady 이벤트
-  → AddAbilities 발동 → DA_SHAbilitySet → USHStaminaSet이 ASC에 등록
-  →                   → DA_SHCombatAbilitySet → GA_SHMeleeAttack, GA_SHDash 부여
-  → LyraPawnExtensionComponent → OnAbilitySystemInitialized 발화
-  → USHStaminaComponent 바인딩 완료
+  → ALyraPlayerState 생성 → ASC 초기화 → NAME_LyraAbilityReady
+  → AddAbilities 발동
+      → DA_SHAbilitySet      : USHStaminaSet, USHManaSet ASC 등록
+      → DA_SHCombatAbilitySet: GA_SHMeleeAttack, GA_SHDash, GA_SHIceBoltProjectile 등 부여
+  → LyraPawnExtensionComponent::OnAbilitySystemInitialized
+  → USHStaminaComponent / USHManaComponent 바인딩 완료
 ```
 
-> `AddAbilities`의 Actor Class는 `ALyraPlayerState`로 지정해야 합니다.
-> Lyra의 ASC는 리스폰 후 스탯 유지를 위해 Character가 아닌 PlayerState에 존재합니다.
-
----
-
-## GAS 설계
-
-### USHStaminaSet 어트리뷰트
-
-| 어트리뷰트 | 설명 | 복제 |
-|-----------|------|------|
-| `Stamina` | 현재 스태미나 (0 ~ MaxStamina) | O |
-| `MaxStamina` | 최대 스태미나 | O |
-| `StaminaCost` | 메타 어트리뷰트 — GE가 소비량을 기록, PostGE에서 Stamina 차감 후 0 초기화 | X |
-
-### Gameplay Effects
-
-| 이름 | 타입 | 효과 |
-|------|------|------|
-| `GE_SHStaminaRegen` | Infinite + Periodic (1초) | Stamina +5 회복 |
-| `GE_SHStaminaDashCost` | Instant | StaminaCost 메타 어트리뷰트로 50 차감 |
-| `GE_SHMeleeDamage` | Instant | LyraHealthSet.Damage 메타 어트리뷰트 적용 |
-| `GE_SHMeleeStaminaCost` | Instant | StaminaCost 메타 어트리뷰트로 스태미나 차감 |
-| `GE_SHMeleeCooldown` | Duration 0.8초 | `Cooldown.SH.Melee.Attack` 태그 부여 |
-| `GE_SHDashCooldown` | Duration | `Cooldown.SH.Dash` 태그 부여 |
-
-### 스태미나 회복 최적화
-
-`GE_SHStaminaRegen` (Infinite + Periodic) 은 `USHStaminaComponent`가 직접 관리합니다.
-
-- 스태미나가 최대치 미만일 때만 GE를 활성화
-- 스태미나가 가득 차면 GE를 제거해 불필요한 Periodic 틱을 차단
-- 스태미나가 소비되면 GE를 재적용
-
-### GameplayTag
-
-| 태그 | 부여 시점 | 용도 |
-|------|----------|------|
-| `SH.Status.OutOfStamina` | 스태미나 < 50 | GA_SHDash 발동 차단 |
-| `Cooldown.SH.Melee.Attack` | 근접 공격 직후 | 쿨다운 중 재발동 차단 |
-| `Cooldown.SH.Dash` | 대쉬 직후 | 쿨다운 중 재발동 차단 |
-
-### GameplayMessage 채널
-
-| 채널 | 페이로드 | 구독 대상 |
-|------|---------|---------|
-| `SH.Message.Stamina.Changed` | `FSHStaminaChangedMessage` | WBP_SHStaminaBar |
-
----
-
-## 근접 공격 파이프라인
+### 보스 AI 패턴
 
 ```
-[입력] → GA_SHMeleeAttack 발동
-    → CommitAbility (스태미나 소비 + 쿨다운 시작)
-    → AbilityTask_PlayMontageAndWait — AM_Melee_Combo01_All_IP 재생
-    → AN_SH_MeleeHitDetect AnimNotify → Event.SH.Melee.HitDetect 발화
-    → AbilityTask_WaitGameplayEvent 수신
-    → PerformMeleeHit: WeaponHilt → WeaponTip 소켓 Sphere Sweep
-      (소켓 없으면 캐릭터 전방 구체 트레이스 폴백)
-    → GE_SHMeleeDamage → LyraHealthSet.Damage 적용
-    → NS_Trail_04 Niagara 소드 트레일 (AnimNotifyState 구간)
+BT_SHBoss
+└── Selector
+    ├── [Decorator: HPPercent ≤ 0.5]  Phase 2 (쿨다운 단축)
+    │   ├── [Decorator: Distance < 250]  BTTask_SHActivateAbility(Boss.Melee)
+    │   └── BTTask_SHActivateAbility(Boss.Fireball)
+    └── Phase 1 (기본)
+        ├── [Decorator: Distance < 250]  BTTask_SHActivateAbility(Boss.Melee)
+        └── BTTask_SHActivateAbility(Boss.Fireball)
 ```
 
 ---
 
-## 예정 작업
+## 주요 기술 결정
 
-| 시스템 | 설명 |
-|--------|------|
-| 클리어/게임오버 화면 | `SH.Message.Boss.Defeated` 구독 클리어 위젯, 플레이어 사망 게임오버 위젯, 재시작 버튼 |
-| 페이즈 전환 연출 | HP 50% 도달 시 무적 + VFX 플래시, `SH.Message.Boss.PhaseChanged` 브로드캐스트 |
-| Enemy 폴리싱 | 사망 애니메이션, 피격 반응, 팀 밸런서 버그(7-D) 수정 |
+**AttributeSet 메타 어트리뷰트 패턴**
+`StaminaCost`는 메타 어트리뷰트로, GE가 소비량을 기록하면 `PostGameplayEffectExecute`에서 `Stamina`를 차감 후 0으로 초기화합니다. Instant GE에서 `Stamina`를 직접 조작하면 클램핑 로직을 우회할 수 있어 이 패턴을 채택했습니다.
+
+**ASC 위치 — PlayerState**
+Lyra의 ASC는 리스폰 후 스탯 유지를 위해 `ALyraCharacter`가 아닌 `ALyraPlayerState`에 존재합니다. `GameFeatureAction_AddAbilities`의 Actor Class를 `ALyraPlayerState`로 지정해야 올바르게 동작합니다.
+
+**보스 ASC 초기화 우회**
+`LyraGameMode::RestartPlayer` 없이 수동으로 보스를 스폰하면 `ULyraHeroComponent`가 없어 ASC 초기화 체인이 끊깁니다. `ASHBossSpawner`에서 `PawnExtComp->InitializeAbilitySystem(LyraPS_ASC, LyraPS)`를 직접 호출해 해결했습니다.
+
+**LyraDamageExecution 파이프라인**
+`Healing` 속성 직접 조작 방식은 `Lyra.Damage.Message`를 브로드캐스트하지 않아 Floating Damage Numbers가 동작하지 않습니다. `LyraCombatSet.BaseDamage`에 Execution Calculation Modifier를 사용하는 공식 파이프라인으로 통일했습니다.
