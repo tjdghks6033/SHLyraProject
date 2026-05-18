@@ -7,6 +7,7 @@
 #include "SHBossController.generated.h"
 
 class UBehaviorTree;
+class ULyraHealthComponent;  // Character/LyraHealthComponent.h
 
 /**
  * ASHBossController
@@ -33,4 +34,10 @@ protected:
 	// 에디터에서 BB_SHBoss + BT_SHBoss 에셋을 연결한다.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AI")
 	TObjectPtr<UBehaviorTree> BehaviorTreeAsset;
+
+private:
+
+	// LyraHealthComponent.OnHealthChanged 콜백. BB_HPPercent 갱신에 사용.
+	UFUNCTION()
+	void OnBossHealthChanged(ULyraHealthComponent* HealthComponent, float OldValue, float NewValue, AActor* InstigatorActor);
 };
