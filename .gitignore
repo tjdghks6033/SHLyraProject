@@ -21,3 +21,10 @@ Saved/
 # OS
 .DS_Store
 Thumbs.db
+
+# 로컬 전용 기획/작업 문서 (GitHub에 올리지 않음)
+EXECUTE.md
+EXECUTE_ARCHIVE.md
+PLAN.md
+PLAN_ARCHIVE.md
+STUDY.md
