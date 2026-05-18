@@ -52,6 +52,9 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | Floating Damage Numbers | `GCNL_Character_DamageTaken` + `B_NiagaraNumberPopComponent` — Lyra 내장 파이프라인 활용, `LyraDamageExecution` → `Lyra.Damage.Message` 브로드캐스트 연동 | 완료 |
 | `GA_SHFireballProjectile` | 화염 발사체 어빌리티 — E 슬롯 프로토타입, Free Magic VFX 적용 | 완료 |
 | CyberSword 팀 컬러 머티리얼 | `Team.WeaponTint` 파라미터 추가 — Desaturate + 팀컬러 Multiply로 텍스처 형태 유지하며 Ice(하늘색)/Fire(주황) 분리, `BP_SHEnemyBoss` WeaponMesh 부착 | 완료 |
+| `GA_SHBossMelee` | 보스 근접 어빌리티 — AnimNotify(`Event.SH.Boss.HitDetect`) 히트 판정 + `hand_r` 소켓 기준 SphereTrace + `GE_SHBossMeleeDamage` 적용 | 완료 |
+| 보스 AI 패턴 강화 | `ASHBossController::OnHealthChanged` → `BB_HPPercent` 갱신, `BTDecorator_SHCheckDistance` 거리 체크, `BT_SHBoss` 거리+페이즈 분기 재설계 | 완료 |
+| `BTTask_SHActivateAbility` 개선 | `bWaitForAbilityEnd` 옵션 추가 — 어빌리티 종료 시까지 BT 대기(latent), 몽타주 도중 패턴 전환 방지 | 완료 |
 
 ---
 
@@ -179,6 +182,6 @@ SHLyraProject (GameFeaturePlugin)
 
 | 시스템 | 설명 |
 |--------|------|
-| Enemy 폴리싱 | 사망 애니메이션, 적 비주얼 구분, 피격 반응, Floating Damage Number |
-| 보스 캐릭터 | AI BehaviorTree + 보스 전용 AbilitySet + 스폰 시스템 |
-| `GA_SHIceBoltProjectile` | C++ 발사체 어빌리티 — 캐스팅 몽타주 + Projectile Actor + 충돌 데미지 |
+| 클리어/게임오버 화면 | `SH.Message.Boss.Defeated` 구독 클리어 위젯, 플레이어 사망 게임오버 위젯, 재시작 버튼 |
+| 페이즈 전환 연출 | HP 50% 도달 시 무적 + VFX 플래시, `SH.Message.Boss.PhaseChanged` 브로드캐스트 |
+| Enemy 폴리싱 | 사망 애니메이션, 피격 반응, 팀 밸런서 버그(7-D) 수정 |
