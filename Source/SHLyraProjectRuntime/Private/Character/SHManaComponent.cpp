@@ -12,6 +12,9 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "NativeGameplayTags.h"
 
+// IsPlayerControlled() 사용에 필요
+#include "GameFramework/Character.h"
+
 // UI에 마나 변화를 전달하는 메시지 버스
 #include "GameFramework/GameplayMessageSubsystem.h"
 
@@ -68,6 +71,17 @@ void USHManaComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void USHManaComponent::OnAbilitySystemInitialized()
 {
+	// 플레이어 전용 컴포넌트 — AI 폰(보스 포함)에서는 비활성화.
+	// LAS_SHMelee_StandardComponents가 ALyraCharacter 전체에 주입하지만
+	// 보스 ASC가 SHManaSet을 보유하면 보스 마나 변화가 플레이어 HUD 채널로 오염된다.
+	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+	{
+		if (!Char->IsPlayerControlled())
+		{
+			return;
+		}
+	}
+
 	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner());
 	if (!ASC)
 	{
