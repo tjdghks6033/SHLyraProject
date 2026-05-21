@@ -6,7 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "NiagaraFunctionLibrary.h"
+#include "GameplayCueNotify_Static.h"
 
 ASHMagicProjectileActor::ASHMagicProjectileActor()
 {
@@ -59,12 +59,28 @@ void ASHMagicProjectileActor::OnSphereOverlap(UPrimitiveComponent* OverlappedCom
 	{
 		FGameplayEffectContextHandle Context = InstigatorASC->MakeEffectContext();
 		Context.AddHitResult(SweepResult);
-		FGameplayEffectSpecHandle SpecHandle =
-			InstigatorASC->MakeOutgoingSpec(DamageEffect, AbilityLevel, Context);
 
-		if (SpecHandle.IsValid())
+		// 데미지 적용
+		FGameplayEffectSpecHandle DamageSpec =
+			InstigatorASC->MakeOutgoingSpec(DamageEffect, AbilityLevel, Context);
+		if (DamageSpec.IsValid())
 		{
-			InstigatorASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+			InstigatorASC->ApplyGameplayEffectSpecToTarget(*DamageSpec.Data.Get(), TargetASC);
+		}
+
+		// 추가 효과 적용 (빙결 스택, 점화 등)
+		for (const TSubclassOf<UGameplayEffect>& EffectClass : OnHitEffects)
+		{
+			if (!EffectClass)
+			{
+				continue;
+			}
+			FGameplayEffectSpecHandle EffectSpec =
+				InstigatorASC->MakeOutgoingSpec(EffectClass, AbilityLevel, Context);
+			if (EffectSpec.IsValid())
+			{
+				InstigatorASC->ApplyGameplayEffectSpecToTarget(*EffectSpec.Data.Get(), TargetASC);
+			}
 		}
 
 		DamagedActors.Add(OtherActor);
@@ -72,28 +88,39 @@ void ASHMagicProjectileActor::OnSphereOverlap(UPrimitiveComponent* OverlappedCom
 
 	if (bDestroyOnHit)
 	{
-		SpawnImpactEffect(GetActorLocation());
+		// 폰(ASC 보유)에 충돌: 대상 ASC에서 큐를 실행해 대상 위치에 VFX를 붙인다.
+		// 대상 ASC가 없으면 인스티게이터 ASC에서 실행.
+		ExecuteImpactCue(SweepResult.ImpactPoint, SweepResult.ImpactNormal, TargetASC);
 		DestroyProjectile();
 	}
 }
 
 void ASHMagicProjectileActor::OnProjectileStopped(const FHitResult& ImpactResult)
 {
-	// 벽/지형 등 Block 대상 충돌 — 데미지 없이 임팩트 VFX만 재생
+	// 벽/지형 충돌 — 데미지 없이 임팩트 GameplayCue만 재생
 	if (bDestroyOnHit)
 	{
-		SpawnImpactEffect(ImpactResult.ImpactPoint);
+		ExecuteImpactCue(ImpactResult.ImpactPoint, ImpactResult.ImpactNormal, nullptr);
 		DestroyProjectile();
 	}
 }
 
-void ASHMagicProjectileActor::SpawnImpactEffect(const FVector& Location)
+void ASHMagicProjectileActor::ExecuteImpactCue(const FVector& Location, const FVector& Normal,
+	UAbilitySystemComponent* TargetASC)
 {
-	if (ImpactEffect)
+	if (!ImpactGameplayCueTag.IsValid() || !InstigatorASC.IsValid())
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			this, ImpactEffect, Location, GetActorRotation());
+		return;
 	}
+
+	FGameplayCueParameters CueParams;
+	CueParams.Location = Location;
+	CueParams.Normal = Normal;
+
+	// 폰(ASC 보유)에 맞으면 대상 ASC에서 실행 — GCN에서 MyTarget으로 대상 캐릭터에 접근 가능.
+	// 벽 등 ASC 없는 대상에 맞으면 인스티게이터 ASC에서 실행 — GCN은 CueParams.Location 사용.
+	UAbilitySystemComponent* ExecutingASC = (TargetASC != nullptr) ? TargetASC : InstigatorASC.Get();
+	ExecutingASC->ExecuteGameplayCue(ImpactGameplayCueTag, CueParams);
 }
 
 void ASHMagicProjectileActor::DestroyProjectile()

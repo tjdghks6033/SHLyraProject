@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "GameplayTagContainer.h"
 
 #include "SHMagicProjectileActor.generated.h"
 
@@ -10,17 +11,24 @@ class USphereComponent;
 class UProjectileMovementComponent;
 class UGameplayEffect;
 class UAbilitySystemComponent;
-class UNiagaraSystem;
 
 /**
  * ASHMagicProjectileActor
  *
- * GA_SHMagicProjectile 어빌리티가 스폰하는 마법 발사체.
+ * 마법 발사체 베이스. 아이스볼트/파이어볼 등 모든 마법 발사체가 공유한다.
  *
- * - 어빌리티가 InitProjectile()로 인스티게이터 ASC와 데미지 GE 클래스를 주입한다.
- * - 충돌(Overlap) 시 대상 ASC에 DamageEffect를 적용하고 자신을 파괴한다.
- * - bReplicates = true, ProjectileMovement 복제로 멀티플레이 이동 동기화.
- * - VFX(Niagara)는 BP 자식 클래스에서 컴포넌트를 추가해 연결한다.
+ * 책임: "맞으면 DamageEffect + OnHitEffects 목록을 적용하고 ImpactGameplayCueTag를 실행한다."
+ * 빙결 스택 카운트, 점화 DoT 등 상태이상 로직은 여기에 없다.
+ * 비주얼(VFX/사운드)은 직접 Niagara를 스폰하지 않고 GameplayCue 태그로만 신호를 보낸다.
+ * 상태이상 반응은 대상 캐릭터(ASHEnemyBase 등)가 자신의 ASC를 구독해 처리한다.
+ *
+ * BP 자식 클래스별 설정 예:
+ *   BP_SHIceBoltProjectile
+ *     OnHitEffects          = [GE_SHFrozenStack]
+ *     ImpactGameplayCueTag  = GameplayCue.SH.IceBolt.Impact
+ *   BP_SHFireballProjectile
+ *     OnHitEffects          = [GE_SHIgniteStatus]
+ *     ImpactGameplayCueTag  = GameplayCue.SH.Fireball.Impact
  */
 UCLASS(Abstract)
 class SHLYRAPROJECTRUNTIME_API ASHMagicProjectileActor : public AActor
@@ -48,23 +56,34 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile")
 	bool bDestroyOnHit = true;
 
-	// 충돌 지점에 스폰할 임팩트 Niagara 이펙트. BP 자식 클래스에서 지정한다.
-	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile")
-	TObjectPtr<UNiagaraSystem> ImpactEffect;
+	// 충돌 시 재생할 임팩트 효과의 GameplayCue 태그.
+	// 폰(Pawn)에 맞으면 대상 ASC에서, 벽/지형에 맞으면 인스티게이터 ASC에서 Execute된다.
+	// BP 자식 클래스에서 GameplayCue.SH.IceBolt.Impact 등 발사체별 태그를 지정한다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile|VFX", meta = (Categories = "GameplayCue"))
+	FGameplayTag ImpactGameplayCueTag;
+
+	// 히트 시 데미지와 별개로 타겟에 추가 적용할 GE 목록.
+	// 빙결 스택, 점화, 둔화 등 속성별 GE를 BP 자식 클래스에서 설정한다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile|Effects")
+	TArray<TSubclassOf<UGameplayEffect>> OnHitEffects;
 
 private:
 
-	// Pawn 등 Overlap 대상에 충돌 시 (데미지 + 임팩트 VFX)
+	// Pawn 등 Overlap 대상에 충돌 시 (데미지 + 임팩트 GameplayCue)
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
 
-	// 벽 등 Block 대상에 충돌해 ProjectileMovement가 멈췄을 때 (임팩트 VFX만)
+	// 벽 등 Block 대상에 충돌해 ProjectileMovement가 멈췄을 때 (임팩트 GameplayCue만)
 	UFUNCTION()
 	void OnProjectileStopped(const FHitResult& ImpactResult);
 
-	void SpawnImpactEffect(const FVector& Location);
+	// 충돌 위치에서 ImpactGameplayCueTag를 Execute한다.
+	// TargetASC가 유효하면 대상 ASC에서, 없으면 인스티게이터 ASC에서 실행한다.
+	void ExecuteImpactCue(const FVector& Location, const FVector& Normal,
+		UAbilitySystemComponent* TargetASC = nullptr);
+
 	void DestroyProjectile();
 
 	TSubclassOf<UGameplayEffect> DamageEffect;

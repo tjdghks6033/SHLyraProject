@@ -73,12 +73,19 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `WBP_SHBossHealthBar` | `SH.Message.Boss.Engaged` 구독 → 보스 액터 바인딩, 실시간 HP 갱신 |
 | Floating Damage Numbers | `GCNL_Character_DamageTaken` + `B_NiagaraNumberPopComponent` (Lyra 내장 파이프라인) |
 
+### 상태이상 시스템 (진행 중)
+
+| 시스템 | 설명 |
+|--------|------|
+| 빙결(Freeze) | 아이스볼트 3스택 → `GE_SHFrozenStack` Overflow → `GE_SHFrozenStatus` 자동 적용. 이동 불가 + BT 정지. 근접 공격 크리티컬(2배). `GameplayCueNotify_Actor`로 VFX 연동 |
+| 점화(Ignite) | 파이어볼 히트 → `GE_SHIgniteStatus` 주기적 DoT (예정) |
+
 ### 기반 시스템
 
 | 시스템 | 설명 |
 |--------|------|
 | `DA_SHMeleeExperience` | `ULyraExperienceDefinition` 기반 독립 게임모드 — ShooterCore 의존 없음 |
-| `ASHEnemyBase` / Bot 계층 | `ALyraCharacter` 기반, `ILyraTeamAgentInterface` 직접 구현, 팀 컬러 MID 주입 |
+| `ASHEnemyBase` / Bot 계층 | `ALyraCharacter` 기반, `ILyraTeamAgentInterface` 직접 구현, 팀 컬러 MID 주입, 빙결 태그 이벤트 구독 |
 | CyberSword 팀 컬러 머티리얼 | `Team.WeaponTint` Vector Parameter — Desaturate + Multiply로 Ice(하늘색)/Fire(주황) 분리 |
 
 ---
