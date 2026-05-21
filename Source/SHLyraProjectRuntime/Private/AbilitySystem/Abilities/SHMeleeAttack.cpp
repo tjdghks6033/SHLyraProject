@@ -14,6 +14,9 @@
 // 몽타주에 AnimNotify_GameplayEvent를 추가하고 이 태그를 지정해야 한다.
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Event_SH_Melee_HitDetect, "Event.SH.Melee.HitDetect");
 
+// 빙결 상태 태그 — 이 태그를 가진 타겟은 근접 공격에 크리티컬(2배 데미지)을 입는다.
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen, "Status.SH.Frozen");
+
 // 근접 공격 쿨다운 태그.
 // GE_SHMeleeCooldown 이 이 태그를 ASC에 부여하고,
 // GA_SHMeleeAttack 의 Cooldown Tags 에 동일 태그를 지정해 쿨다운을 감지한다.
@@ -193,6 +196,18 @@ void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
 		if (SpecHandle.IsValid())
 		{
 			InstigatorASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+
+			// 빙결 타겟은 추가로 DamageEffect를 한 번 더 적용해 2배 데미지(크리티컬)를 낸다.
+			// 데미지 숫자가 두 번 팝업되어 크리티컬임을 시각적으로 알려준다.
+			if (TargetASC->HasMatchingGameplayTag(TAG_Status_SH_Frozen))
+			{
+				FGameplayEffectSpecHandle CritSpec =
+					InstigatorASC->MakeOutgoingSpec(DamageEffect, GetAbilityLevel(), Context);
+				if (CritSpec.IsValid())
+				{
+					InstigatorASC->ApplyGameplayEffectSpecToTarget(*CritSpec.Data.Get(), TargetASC);
+				}
+			}
 		}
 
 		DamagedActors.Add(HitActor);

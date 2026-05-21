@@ -1,20 +1,63 @@
 // Copyright SH. All Rights Reserved.
 
 #include "Enemy/SHEnemyBase.h"
+#include "AbilitySystemComponent.h"
+#include "AIController.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "NativeGameplayTags.h"
 #include "TimerManager.h"
+
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen, "Status.SH.Frozen");
 
 ASHEnemyBase::ASHEnemyBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	// ALyraCharacter가 PawnExtensionComponent / HealthComponent / CameraComponent를 이미 서브오브젝트로 생성한다.
-	// 적 공통 설정이 필요하면 여기에 추가.
 }
 
 void ASHEnemyBase::OnAbilitySystemInitialized()
 {
 	Super::OnAbilitySystemInitialized();
 
-	// ASC 초기화 완료 — 자식 클래스가 Attribute 초기값 세팅이나 어빌리티 바인딩 훅으로 활용 가능.
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+
+	// 빙결 상태 태그 변경 감지 — 이동/BT 제어
+	ASC->RegisterGameplayTagEvent(TAG_Status_SH_Frozen, EGameplayTagEventType::NewOrRemoved)
+		.AddUObject(this, &ASHEnemyBase::OnFrozenTagChanged);
+}
+
+void ASHEnemyBase::OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	if (NewCount > 0)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+
+		if (AAIController* AIC = GetController<AAIController>())
+		{
+			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
+			{
+				BTC->PauseLogic(TEXT("Frozen"));
+			}
+		}
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
+
+		if (AAIController* AIC = GetController<AAIController>())
+		{
+			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
+			{
+				BTC->ResumeLogic(TEXT("Frozen"));
+			}
+		}
+	}
 }
 
 void ASHEnemyBase::OnDeathFinished(AActor* OwningActor)
