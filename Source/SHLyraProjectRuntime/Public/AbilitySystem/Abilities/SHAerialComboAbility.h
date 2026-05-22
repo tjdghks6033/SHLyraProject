@@ -81,6 +81,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Effects")
 	TSubclassOf<UGameplayEffect> SlamDamageEffect;
 
+	// 슬램 후 보스 넉다운 (Duration = KnockedDownMontage 길이에 맞춤)
+	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Effects")
+	TSubclassOf<UGameplayEffect> KnockedDownEffect;
+
 	// ── 카메라 셰이크 ──────────────────────────────────────
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|CameraShake")
 	TSubclassOf<UCameraShakeBase> LaunchShake;

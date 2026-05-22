@@ -8,8 +8,9 @@
 #include "NativeGameplayTags.h"
 #include "TimerManager.h"
 
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen,    "Status.SH.Frozen");
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Launched,  "Status.SH.Launched");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen,      "Status.SH.Frozen");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Launched,    "Status.SH.Launched");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_KnockedDown, "Status.SH.KnockedDown");
 
 ASHEnemyBase::ASHEnemyBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -36,6 +37,10 @@ void ASHEnemyBase::OnAbilitySystemInitialized()
 	// 공중 발사 상태 태그 변경 감지 — 중력 제어/BT 제어
 	ASC->RegisterGameplayTagEvent(TAG_Status_SH_Launched, EGameplayTagEventType::NewOrRemoved)
 		.AddUObject(this, &ASHEnemyBase::OnLaunchedTagChanged);
+
+	// 넉다운 상태 태그 변경 감지 — 넉다운 몽타주/BT 제어
+	ASC->RegisterGameplayTagEvent(TAG_Status_SH_KnockedDown, EGameplayTagEventType::NewOrRemoved)
+		.AddUObject(this, &ASHEnemyBase::OnKnockedDownTagChanged);
 }
 
 void ASHEnemyBase::OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -76,6 +81,11 @@ void ASHEnemyBase::OnLaunchedTagChanged(const FGameplayTag Tag, int32 NewCount)
 		CMC->SetMovementMode(MOVE_Flying);
 		CMC->Velocity       = FVector::ZeroVector;
 		CMC->MaxWalkSpeed   = 0.f;
+
+		if (LaunchReactionMontage)
+		{
+			PlayAnimMontage(LaunchReactionMontage);
+		}
 
 		if (AAIController* AIC = GetController<AAIController>())
 		{
@@ -118,4 +128,53 @@ void ASHEnemyBase::HandleDestroyAfterDelay()
 {
 	// Lyra 정식 파괴 경로 — K2_OnDeathFinished(BP 이벤트) 발화 + UninitAndDestroy(ASC uninit + Destroy) 실행.
 	DestroyDueToDeath();
+}
+
+void ASHEnemyBase::OnKnockedDownTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	if (NewCount > 0)
+	{
+		if (KnockedDownMontage)
+		{
+			// PlayAnimMontage 반환값 = 실제 재생 시간(초). 이 시간 후에 GE를 제거한다.
+			const float MontageDuration = PlayAnimMontage(KnockedDownMontage);
+			if (MontageDuration > 0.f)
+			{
+				GetWorldTimerManager().SetTimer(
+					KnockedDownTimerHandle,
+					this,
+					&ASHEnemyBase::RemoveKnockedDownEffect,
+					MontageDuration,
+					false);
+			}
+		}
+
+		if (AAIController* AIC = GetController<AAIController>())
+		{
+			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
+			{
+				BTC->PauseLogic(TEXT("KnockedDown"));
+			}
+		}
+	}
+	else
+	{
+		GetWorldTimerManager().ClearTimer(KnockedDownTimerHandle);
+
+		if (AAIController* AIC = GetController<AAIController>())
+		{
+			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
+			{
+				BTC->ResumeLogic(TEXT("KnockedDown"));
+			}
+		}
+	}
+}
+
+void ASHEnemyBase::RemoveKnockedDownEffect()
+{
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		ASC->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(TAG_Status_SH_KnockedDown));
+	}
 }

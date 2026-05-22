@@ -313,6 +313,9 @@ void USHAerialComboAbility::OnSlamEventReceived(FGameplayEventData Payload)
 
 	ApplyEffectToTarget(SlamDamageEffect, InstigatorASC, TargetASC);
 
+	// 넉다운 GE → Status.SH.KnockedDown → OnKnockedDownTagChanged → 바닥 구르기 몽타주 재생
+	ApplyEffectToTarget(KnockedDownEffect, InstigatorASC, TargetASC);
+
 	// 슬램 착지 VFX
 	if (InstigatorASC && SlamCueTag.IsValid())
 	{

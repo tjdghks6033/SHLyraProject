@@ -37,13 +37,24 @@ protected:
 	virtual void OnDeathFinished(AActor* OwningActor) override;
 	//~End of ALyraCharacter interface
 
+	// 공중으로 띄워질 때 재생. 애니메이션 확보 후 BP에서 설정. (optional)
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy|Montage")
+	TObjectPtr<UAnimMontage> LaunchReactionMontage;
+
+	// 슬램으로 바닥에 내리꽂힐 때 재생하는 넉다운 애니메이션.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy|Montage")
+	TObjectPtr<UAnimMontage> KnockedDownMontage;
+
 private:
 
 	// Status.SH.Frozen 태그 부여/제거 시 호출. 이동 불가 + BT 일시정지를 처리한다.
 	void OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount);
 
-	// Status.SH.Launched 태그 부여/제거 시 호출. GravityScale=0으로 공중 부양 + BT 일시정지.
+	// Status.SH.Launched 태그 부여/제거 시 호출. MOVE_Flying으로 공중 부양 + BT 일시정지.
 	void OnLaunchedTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	// Status.SH.KnockedDown 태그 부여/제거 시 호출. 넉다운 몽타주 재생 + BT 일시정지.
+	void OnKnockedDownTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 	// 사망 후 액터를 파괴하기까지 대기 시간 (초).
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy", meta = (ClampMin = "0.0"))
@@ -56,6 +67,8 @@ private:
 	float OriginalGravityScale = 1.f;
 
 	FTimerHandle DestroyTimerHandle;
+	FTimerHandle KnockedDownTimerHandle;
 
 	void HandleDestroyAfterDelay();
+	void RemoveKnockedDownEffect();
 };
