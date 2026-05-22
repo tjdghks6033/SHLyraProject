@@ -8,7 +8,8 @@
 #include "NativeGameplayTags.h"
 #include "TimerManager.h"
 
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen, "Status.SH.Frozen");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen,    "Status.SH.Frozen");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Launched,  "Status.SH.Launched");
 
 ASHEnemyBase::ASHEnemyBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -26,10 +27,15 @@ void ASHEnemyBase::OnAbilitySystemInitialized()
 	}
 
 	OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+	OriginalGravityScale  = GetCharacterMovement()->GravityScale;
 
 	// 빙결 상태 태그 변경 감지 — 이동/BT 제어
 	ASC->RegisterGameplayTagEvent(TAG_Status_SH_Frozen, EGameplayTagEventType::NewOrRemoved)
 		.AddUObject(this, &ASHEnemyBase::OnFrozenTagChanged);
+
+	// 공중 발사 상태 태그 변경 감지 — 중력 제어/BT 제어
+	ASC->RegisterGameplayTagEvent(TAG_Status_SH_Launched, EGameplayTagEventType::NewOrRemoved)
+		.AddUObject(this, &ASHEnemyBase::OnLaunchedTagChanged);
 }
 
 void ASHEnemyBase::OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -55,6 +61,40 @@ void ASHEnemyBase::OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount)
 			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
 			{
 				BTC->ResumeLogic(TEXT("Frozen"));
+			}
+		}
+	}
+}
+
+void ASHEnemyBase::OnLaunchedTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	UCharacterMovementComponent* CMC = GetCharacterMovement();
+
+	if (NewCount > 0)
+	{
+		// MOVE_Flying: 중력 없이 현재 위치에 정지. GravityScale 조작보다 신뢰성 높음.
+		CMC->SetMovementMode(MOVE_Flying);
+		CMC->Velocity       = FVector::ZeroVector;
+		CMC->MaxWalkSpeed   = 0.f;
+
+		if (AAIController* AIC = GetController<AAIController>())
+		{
+			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
+			{
+				BTC->PauseLogic(TEXT("Launched"));
+			}
+		}
+	}
+	else
+	{
+		CMC->SetMovementMode(MOVE_Walking);
+		CMC->MaxWalkSpeed = OriginalMaxWalkSpeed;
+
+		if (AAIController* AIC = GetController<AAIController>())
+		{
+			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
+			{
+				BTC->ResumeLogic(TEXT("Launched"));
 			}
 		}
 	}

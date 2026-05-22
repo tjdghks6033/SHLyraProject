@@ -42,12 +42,18 @@ private:
 	// Status.SH.Frozen 태그 부여/제거 시 호출. 이동 불가 + BT 일시정지를 처리한다.
 	void OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount);
 
+	// Status.SH.Launched 태그 부여/제거 시 호출. GravityScale=0으로 공중 부양 + BT 일시정지.
+	void OnLaunchedTagChanged(const FGameplayTag Tag, int32 NewCount);
+
 	// 사망 후 액터를 파괴하기까지 대기 시간 (초).
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy", meta = (ClampMin = "0.0"))
 	float DestroyDelay = 3.0f;
 
-	// OnAbilitySystemInitialized 시점에 저장한 기본 이동 속도. 빙결 해제 시 복원.
+	// OnAbilitySystemInitialized 시점에 저장한 기본 이동 속도. 빙결/착지 해제 시 복원.
 	float OriginalMaxWalkSpeed = 0.f;
+
+	// OnAbilitySystemInitialized 시점에 저장한 기본 중력 스케일. 착지 해제 시 복원.
+	float OriginalGravityScale = 1.f;
 
 	FTimerHandle DestroyTimerHandle;
 
