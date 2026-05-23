@@ -179,7 +179,8 @@ void USHAerialComboAbility::StartTeleportPhase()
 	if (InstigatorASC && TeleportCueTag.IsValid())
 	{
 		FGameplayCueParameters CueParams;
-		CueParams.Location = PlayerLocation;
+		CueParams.Location     = PlayerLocation;
+		CueParams.EffectCauser = AvatarActor; // DashTrail 등 Attach용 참조
 		InstigatorASC->ExecuteGameplayCue(TeleportCueTag, CueParams);
 	}
 
@@ -247,6 +248,14 @@ void USHAerialComboAbility::OnAerialHitEventReceived(FGameplayEventData Payload)
 
 	ApplyEffectToTarget(AerialHitDamageEffect, InstigatorASC, TargetASC);
 	PlayCameraShake(AerialHitShake);
+
+	// 히트 VFX — 보스 위치 기준 Execute
+	if (InstigatorASC && HitCueTag.IsValid())
+	{
+		FGameplayCueParameters CueParams;
+		CueParams.Location = TargetCharacter->GetActorLocation();
+		InstigatorASC->ExecuteGameplayCue(HitCueTag, CueParams);
+	}
 }
 
 void USHAerialComboAbility::OnAerialMontageCompleted()

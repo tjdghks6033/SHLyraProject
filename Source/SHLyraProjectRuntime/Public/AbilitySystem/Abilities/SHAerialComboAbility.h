@@ -125,6 +125,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Cues")
 	FGameplayTag TeleportCueTag;
 
+	// 공중 콤보 히트 1회마다 Execute (보스 위치 기준)
+	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Cues")
+	FGameplayTag HitCueTag;
+
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Cues")
 	FGameplayTag SlamCueTag;
 
