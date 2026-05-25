@@ -32,11 +32,8 @@ void USHAerialComboAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	UE_LOG(LogTemp, Warning, TEXT("[AerialCombo] ActivateAbility called"));
-
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[AerialCombo] CommitAbility FAILED"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -44,12 +41,9 @@ void USHAerialComboAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	TargetCharacter = FindNearestEnemy();
 	if (!TargetCharacter.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[AerialCombo] No target found"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("[AerialCombo] Target found: %s"), *TargetCharacter->GetName());
 
 	StartLaunchPhase();
 }
