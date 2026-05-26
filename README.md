@@ -78,7 +78,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 
 | 시스템 | 설명 |
 |--------|------|
-| 빙결(Freeze) | 아이스볼트 3스택 → `GE_SHFrozenStack` Overflow → `GE_SHFrozenStatus` 자동 적용. 이동 불가 + BT 정지. 근접 공격 크리티컬(2배). `GameplayCueNotify_Actor`로 VFX 연동 |
+| 빙결(Freeze) | 아이스볼트 3스택 → `GE_SHFrozenStack` Overflow → `GE_SHFrozenStatus` 자동 적용. 이동 불가 + BT 정지. 빙결 중 **모든 데미지 2배** (`USHDamageExecution`에서 TargetTags 확인). `GameplayCueNotify_Actor`로 VFX 연동 |
 | 점화(Ignite) | 파이어볼 히트 → `GE_SHIgniteStatus` DoT 0.5초 틱(+8/tick, 4초), `GCN_SH_Ignited` 루프 파티클 (1초 주기 `P_Fire5` Attach) |
 
 ### 기반 시스템
@@ -117,6 +117,8 @@ SHLyraProject (GameFeaturePlugin)
             │       ├── Attributes/
             │       │       ├── SHStaminaSet — Stamina / MaxStamina / StaminaCost
             │       │       └── SHManaSet    — Mana / MaxMana
+            │       ├── Executions/
+            │       │       └── SHDamageExecution — LyraDamageExecution 기반, 빙결 시 ×2 배율 적용
             │       └── Abilities/
             │               ├── SHMeleeAttack       — 몽타주 + AnimNotify + SweepTrace
             │               ├── SHDash              — RootMotionConstantForce
@@ -175,3 +177,6 @@ Lyra의 ASC는 리스폰 후 스탯 유지를 위해 `ALyraCharacter`가 아닌 
 
 **LyraDamageExecution 파이프라인**
 `Healing` 속성 직접 조작 방식은 `Lyra.Damage.Message`를 브로드캐스트하지 않아 Floating Damage Numbers가 동작하지 않습니다. `LyraCombatSet.BaseDamage`에 Execution Calculation Modifier를 사용하는 공식 파이프라인으로 통일했습니다.
+
+**USHDamageExecution — 상태이상 배율의 올바른 위치**
+빙결(Frozen) 시 데미지 2배 로직을 어빌리티 코드 내부에 두면 어빌리티가 타겟 상태를 직접 알아야 하는 책임 분리 위반입니다. `UGameplayEffectExecutionCalculation`에서 `CapturedTargetTags`를 확인해 배율을 결정하도록 `USHDamageExecution`을 신규 작성했습니다. 이 클래스를 사용하는 모든 데미지 GE는 자동으로 빙결 배율이 적용됩니다.
