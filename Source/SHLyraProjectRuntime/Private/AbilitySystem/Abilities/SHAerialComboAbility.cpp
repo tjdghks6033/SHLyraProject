@@ -7,6 +7,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Camera/CameraShakeBase.h"
+#include "Camera/LyraCameraMode.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -43,6 +44,11 @@ void USHAerialComboAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
+	}
+
+	if (UltimateCameraMode)
+	{
+		SetCameraMode(UltimateCameraMode);
 	}
 
 	StartLaunchPhase();

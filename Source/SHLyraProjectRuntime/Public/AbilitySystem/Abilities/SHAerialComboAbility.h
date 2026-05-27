@@ -10,6 +10,7 @@
 class UAnimMontage;
 class UCameraShakeBase;
 class UGameplayEffect;
+class ULyraCameraMode;
 struct FGameplayEventData;
 
 /**
@@ -84,6 +85,11 @@ protected:
 	// 슬램 후 보스 넉다운 (Duration = KnockedDownMontage 길이에 맞춤)
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Effects")
 	TSubclassOf<UGameplayEffect> KnockedDownEffect;
+
+	// ── 카메라 모드 ──────────────────────────────────────
+	// EndAbility 시 자동 복원 (LyraGameplayAbility::ClearCameraMode).
+	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Camera")
+	TSubclassOf<ULyraCameraMode> UltimateCameraMode;
 
 	// ── 카메라 셰이크 ──────────────────────────────────────
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|CameraShake")
