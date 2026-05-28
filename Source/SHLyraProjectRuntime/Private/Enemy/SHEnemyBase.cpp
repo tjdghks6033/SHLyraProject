@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "NativeGameplayTags.h"
 #include "TimerManager.h"
+#include "AbilitySystem/Attributes/LyraHealthSet.h"
 
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen,      "Status.SH.Frozen");
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Launched,    "Status.SH.Launched");
@@ -41,6 +42,10 @@ void ASHEnemyBase::OnAbilitySystemInitialized()
 	// 넉다운 상태 태그 변경 감지 — 넉다운 몽타주/BT 제어
 	ASC->RegisterGameplayTagEvent(TAG_Status_SH_KnockedDown, EGameplayTagEventType::NewOrRemoved)
 		.AddUObject(this, &ASHEnemyBase::OnKnockedDownTagChanged);
+
+	// Lyra 데미지 메시지 구독 — 피격 시 HitReactMontage 재생 (상태 조건부)
+	UGameplayMessageSubsystem& MsgSub = UGameplayMessageSubsystem::Get(this);
+	DamageMessageHandle = MsgSub.RegisterListener(TAG_Lyra_Damage_Message, this, &ASHEnemyBase::OnDamageMessageReceived);
 }
 
 void ASHEnemyBase::OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -84,7 +89,16 @@ void ASHEnemyBase::OnLaunchedTagChanged(const FGameplayTag Tag, int32 NewCount)
 
 		if (LaunchReactionMontage)
 		{
-			PlayAnimMontage(LaunchReactionMontage);
+			const float Duration = PlayAnimMontage(LaunchReactionMontage);
+			if (Duration > 0.f && LaunchLoopMontage)
+			{
+				GetWorldTimerManager().SetTimer(
+					LaunchReactionTimerHandle,
+					this,
+					&ASHEnemyBase::OnLaunchReactionFinished,
+					Duration,
+					false);
+			}
 		}
 
 		if (AAIController* AIC = GetController<AAIController>())
@@ -97,6 +111,15 @@ void ASHEnemyBase::OnLaunchedTagChanged(const FGameplayTag Tag, int32 NewCount)
 	}
 	else
 	{
+		GetWorldTimerManager().ClearTimer(LaunchReactionTimerHandle);
+
+		UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+		if (AnimInst)
+		{
+			if (LaunchReactionMontage) { AnimInst->Montage_Stop(0.25f, LaunchReactionMontage); }
+			if (LaunchLoopMontage)     { AnimInst->Montage_Stop(0.25f, LaunchLoopMontage); }
+		}
+
 		CMC->SetMovementMode(MOVE_Walking);
 		CMC->MaxWalkSpeed = OriginalMaxWalkSpeed;
 
@@ -177,4 +200,51 @@ void ASHEnemyBase::RemoveKnockedDownEffect()
 	{
 		ASC->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(TAG_Status_SH_KnockedDown));
 	}
+}
+
+void ASHEnemyBase::OnLaunchReactionFinished()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC || !ASC->HasMatchingGameplayTag(TAG_Status_SH_Launched) || !LaunchLoopMontage)
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInst)
+	{
+		return;
+	}
+
+	AnimInst->Montage_Play(LaunchLoopMontage);
+	const FName Section = LaunchLoopMontage->GetSectionName(0);
+	AnimInst->Montage_SetNextSection(Section, Section, LaunchLoopMontage);
+}
+
+void ASHEnemyBase::OnDamageMessageReceived(FGameplayTag Channel, const FLyraVerbMessage& Payload)
+{
+	if (Payload.Target != this)
+	{
+		return;
+	}
+
+	if (!HitReactMontage)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	// 공중 발사 또는 넉다운 상태 중엔 전용 몽타주가 이미 재생 중 — 충돌 방지
+	if (ASC->HasMatchingGameplayTag(TAG_Status_SH_Launched) ||
+		ASC->HasMatchingGameplayTag(TAG_Status_SH_KnockedDown))
+	{
+		return;
+	}
+
+	PlayAnimMontage(HitReactMontage);
 }

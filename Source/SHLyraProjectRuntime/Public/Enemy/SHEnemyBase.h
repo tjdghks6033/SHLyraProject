@@ -4,6 +4,8 @@
 
 #include "Character/LyraCharacter.h"
 #include "GameplayTagContainer.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
+#include "Messages/LyraVerbMessage.h"
 
 #include "SHEnemyBase.generated.h"
 
@@ -37,13 +39,21 @@ protected:
 	virtual void OnDeathFinished(AActor* OwningActor) override;
 	//~End of ALyraCharacter interface
 
-	// 공중으로 띄워질 때 재생. 애니메이션 확보 후 BP에서 설정. (optional)
+	// 공중으로 띄워질 때 한 번 재생되는 리액션 애니메이션.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy|Montage")
 	TObjectPtr<UAnimMontage> LaunchReactionMontage;
+
+	// 리액션 종료 후 슬램 전까지 루프 재생되는 공중 대기 애니메이션.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy|Montage")
+	TObjectPtr<UAnimMontage> LaunchLoopMontage;
 
 	// 슬램으로 바닥에 내리꽂힐 때 재생하는 넉다운 애니메이션.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy|Montage")
 	TObjectPtr<UAnimMontage> KnockedDownMontage;
+
+	// 일반 피격 시 재생. Launched/KnockedDown 상태 중에는 재생하지 않는다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy|Montage")
+	TObjectPtr<UAnimMontage> HitReactMontage;
 
 private:
 
@@ -55,6 +65,9 @@ private:
 
 	// Status.SH.KnockedDown 태그 부여/제거 시 호출. 넉다운 몽타주 재생 + BT 일시정지.
 	void OnKnockedDownTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	// Lyra.Damage.Message 수신 → Launched/KnockedDown 상태가 아닐 때만 HitReactMontage 재생.
+	void OnDamageMessageReceived(FGameplayTag Channel, const FLyraVerbMessage& Payload);
 
 	// 사망 후 액터를 파괴하기까지 대기 시간 (초).
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Enemy", meta = (ClampMin = "0.0"))
@@ -68,7 +81,11 @@ private:
 
 	FTimerHandle DestroyTimerHandle;
 	FTimerHandle KnockedDownTimerHandle;
+	FTimerHandle LaunchReactionTimerHandle;
+
+	FGameplayMessageListenerHandle DamageMessageHandle;
 
 	void HandleDestroyAfterDelay();
 	void RemoveKnockedDownEffect();
+	void OnLaunchReactionFinished();
 };
