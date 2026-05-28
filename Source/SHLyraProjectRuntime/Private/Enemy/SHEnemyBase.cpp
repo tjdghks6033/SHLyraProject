@@ -53,6 +53,7 @@ void ASHEnemyBase::OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount)
 	if (NewCount > 0)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+		CustomTimeDilation = 0.f;
 
 		if (AAIController* AIC = GetController<AAIController>())
 		{
@@ -65,6 +66,7 @@ void ASHEnemyBase::OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount)
 	else
 	{
 		GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
+		CustomTimeDilation = 1.f;
 
 		if (AAIController* AIC = GetController<AAIController>())
 		{
@@ -239,9 +241,10 @@ void ASHEnemyBase::OnDamageMessageReceived(FGameplayTag Channel, const FLyraVerb
 		return;
 	}
 
-	// 공중 발사 또는 넉다운 상태 중엔 전용 몽타주가 이미 재생 중 — 충돌 방지
+	// 공중 발사, 넉다운, 빙결 상태 중엔 전용 몽타주가 이미 재생 중이거나 TimeDilation=0 — 충돌 방지
 	if (ASC->HasMatchingGameplayTag(TAG_Status_SH_Launched) ||
-		ASC->HasMatchingGameplayTag(TAG_Status_SH_KnockedDown))
+		ASC->HasMatchingGameplayTag(TAG_Status_SH_KnockedDown) ||
+		ASC->HasMatchingGameplayTag(TAG_Status_SH_Frozen))
 	{
 		return;
 	}
