@@ -51,6 +51,13 @@ void USHAerialComboAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		SetCameraMode(UltimateCameraMode);
 	}
 
+	// Hit 리스너를 어빌리티 시작 시점에 등록 — 런치/공중 콤보 어느 단계에서든 수신
+	UAbilityTask_WaitGameplayEvent* HitEventTask =
+		UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+			this, TAG_Event_AerialCombo_Hit, nullptr, false, true);
+	HitEventTask->EventReceived.AddDynamic(this, &USHAerialComboAbility::OnAerialHitEventReceived);
+	HitEventTask->ReadyForActivation();
+
 	StartLaunchPhase();
 }
 
@@ -172,7 +179,8 @@ void USHAerialComboAbility::StartTeleportPhase()
 	const FVector BossLocation  = TargetCharacter->GetActorLocation();
 	const FVector PlayerLocation = AvatarActor->GetActorLocation();
 	const FVector DirectionToBoss = (BossLocation - PlayerLocation).GetSafeNormal2D();
-	const FVector TeleportLocation = BossLocation - DirectionToBoss * TeleportStandoffDistance;
+	FVector TeleportLocation = BossLocation - DirectionToBoss * TeleportStandoffDistance;
+	TeleportLocation.Z += TeleportZOffset;
 
 	// 텔레포트 VFX (출발지에서 Execute)
 	UAbilitySystemComponent* InstigatorASC = CurrentActorInfo->AbilitySystemComponent.Get();
@@ -225,14 +233,6 @@ void USHAerialComboAbility::StartAerialComboPhase()
 	MontageTask->OnCancelled.AddDynamic(this, &USHAerialComboAbility::OnAerialMontageCancelled);
 	MontageTask->OnInterrupted.AddDynamic(this, &USHAerialComboAbility::OnAerialMontageCancelled);
 	MontageTask->ReadyForActivation();
-
-	// OnlyTriggerOnce=false — 몽타주 내 히트 Notify 3개 모두 수신
-	UAbilityTask_WaitGameplayEvent* EventTask =
-		UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-			this, TAG_Event_AerialCombo_Hit, nullptr, false, true);
-
-	EventTask->EventReceived.AddDynamic(this, &USHAerialComboAbility::OnAerialHitEventReceived);
-	EventTask->ReadyForActivation();
 }
 
 void USHAerialComboAbility::OnAerialHitEventReceived(FGameplayEventData Payload)

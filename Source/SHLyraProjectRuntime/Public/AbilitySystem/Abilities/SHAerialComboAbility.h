@@ -127,6 +127,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo", meta = (ClampMin = "0.0"))
 	float TeleportStandoffDistance = 150.f;
 
+	// 텔레포트 위치의 Z 오프셋 (cm). 양수 = 보스보다 위, 음수 = 보스보다 아래
+	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo")
+	float TeleportZOffset = 0.f;
+
 	// ── GameplayCue 태그 ──────────────────────────────────
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Cues")
 	FGameplayTag TeleportCueTag;
