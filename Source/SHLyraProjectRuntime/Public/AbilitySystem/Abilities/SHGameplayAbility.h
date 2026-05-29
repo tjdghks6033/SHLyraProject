@@ -3,10 +3,13 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
+#include "GameplayTagContainer.h"
 
 #include "SHGameplayAbility.generated.h"
 
 class ACharacter;
+class UAbilitySystemComponent;
+class UTexture2D;
 
 /**
  * USHGameplayAbility
@@ -35,9 +38,29 @@ public:
 
 	USHGameplayAbility(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
+	// ASC에 부여된 어빌리티 중 InputTag가 일치하는 것의 CDO를 반환한다.
+	// WBP_SHSkillSlot이 Construct 시점에 아이콘/쿨다운태그를 자동으로 읽기 위해 사용.
+	// 매칭되는 스펙이 없으면 nullptr 반환.
+	UFUNCTION(BlueprintCallable, Category = "SH|UI")
+	static USHGameplayAbility* FindAbilityCDOByInputTag(UAbilitySystemComponent* ASC, FGameplayTag InputTag);
+
+	// InputTag에 해당하는 어빌리티의 코스트 GE를 GAS 내장 CheckCost로 검사한다.
+	// 현재 어트리뷰트(마나/스태미나)가 코스트를 감당할 수 있으면 true.
+	// 비용 값을 직접 중복 관리하지 않고 코스트 GE 정의를 그대로 활용한다.
+	UFUNCTION(BlueprintCallable, Category = "SH|UI")
+	static bool CanPayCostByInputTag(UAbilitySystemComponent* ASC, FGameplayTag InputTag);
+
 protected:
 
 	//~ UGameplayAbility interface
+
+	// CheckCost 오버라이드: Lyra는 어트리뷰트 클램핑을 PostGameplayEffectExecute에서 처리하므로
+	// 기본 CanApplyAttributeModifiers가 min 값을 인식하지 못한다.
+	// 메타 어트리뷰트(ManaCost, StaminaCost) → 실제 자원(Mana, Stamina) 매핑을 직접 비교한다.
+	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo,
@@ -48,6 +71,16 @@ protected:
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		bool bReplicateEndAbility, bool bWasCancelled) override;
 	//~ End of UGameplayAbility interface
+
+	// 스킬바 슬롯에 표시할 아이콘.
+	// WBP_SHSkillSlot이 InputTag로 이 CDO를 찾아 자동으로 읽는다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SH|UI")
+	TObjectPtr<UTexture2D> SlotIcon;
+
+	// 쿨다운 GE의 AssetTag. WBP_SHSkillSlot이 Effect Tag Query에 사용한다.
+	// 예: "Cooldown.SH.IceBolt" / 쿨다운 없으면 공백
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SH|UI", meta = (Categories = "Cooldown"))
+	FGameplayTag CooldownTag;
 
 	// 활성 중 캐릭터 이동을 제한할지 여부.
 	// 근접/마법 같은 '커밋형' 어빌리티는 true로 설정.

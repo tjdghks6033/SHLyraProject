@@ -2,12 +2,127 @@
 
 #include "AbilitySystem/Abilities/SHGameplayAbility.h"
 
+#include "AbilitySystemComponent.h"
+#include "GameplayEffect.h"
+#include "AbilitySystem/Attributes/SHManaSet.h"
+#include "AbilitySystem/Attributes/SHStaminaSet.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 USHGameplayAbility::USHGameplayAbility(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+}
+
+USHGameplayAbility* USHGameplayAbility::FindAbilityCDOByInputTag(UAbilitySystemComponent* ASC, FGameplayTag InputTag)
+{
+	if (!ASC || !InputTag.IsValid())
+	{
+		return nullptr;
+	}
+
+	for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+	{
+		if (Spec.GetDynamicSpecSourceTags().HasTagExact(InputTag))
+		{
+			return Cast<USHGameplayAbility>(Spec.Ability.Get());
+		}
+	}
+
+	return nullptr;
+}
+
+bool USHGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	FGameplayTagContainer* OptionalRelevantTags) const
+{
+	// 기본 검사(쿨다운 태그 등)를 먼저 통과해야 한다.
+	if (!Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	const UGameplayEffect* CostGE = GetCostGameplayEffect();
+	UE_LOG(LogTemp, Warning, TEXT("[CheckCost] CostGE=%s"), CostGE ? *CostGE->GetName() : TEXT("NULL"));
+	if (!CostGE || !ActorInfo)
+	{
+		return true;
+	}
+
+	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+	if (!ASC)
+	{
+		return true;
+	}
+
+	const FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromHandle(Handle);
+	const int32 AbilityLevel = Spec ? Spec->Level : 1;
+
+	for (const FGameplayModifierInfo& Mod : CostGE->Modifiers)
+	{
+		if (Mod.ModifierOp != EGameplayModOp::Additive)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[CheckCost] Mod skipped: not Additive"));
+			continue;
+		}
+
+		float Magnitude = 0.0f;
+		if (!Mod.ModifierMagnitude.GetStaticMagnitudeIfPossible(AbilityLevel, Magnitude) || Magnitude <= 0.0f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[CheckCost] Mod skipped: GetStaticMagnitude failed or Magnitude=%.1f"), Magnitude);
+			continue;
+		}
+
+		FGameplayAttribute ResourceAttribute;
+		if (Mod.Attribute == USHManaSet::GetManaCostAttribute())
+		{
+			ResourceAttribute = USHManaSet::GetManaAttribute();
+		}
+		else if (Mod.Attribute == USHStaminaSet::GetStaminaCostAttribute())
+		{
+			ResourceAttribute = USHStaminaSet::GetStaminaAttribute();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[CheckCost] Mod skipped: unknown attribute %s"), *Mod.Attribute.GetName());
+			continue;
+		}
+
+		bool bFound = false;
+		const float CurrentValue = ASC->GetGameplayAttributeValue(ResourceAttribute, bFound);
+		UE_LOG(LogTemp, Warning, TEXT("[CheckCost] Cost=%.1f, Current=%.1f, bFound=%d → %s"),
+			Magnitude, CurrentValue, (int32)bFound, (bFound && CurrentValue < Magnitude) ? TEXT("CANNOT PAY") : TEXT("can pay"));
+
+		if (bFound && CurrentValue < Magnitude)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool USHGameplayAbility::CanPayCostByInputTag(UAbilitySystemComponent* ASC, FGameplayTag InputTag)
+{
+	if (!ASC || !InputTag.IsValid())
+	{
+		return true;
+	}
+
+	for (FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+	{
+		if (!Spec.GetDynamicSpecSourceTags().HasTagExact(InputTag))
+		{
+			continue;
+		}
+
+		if (const UGameplayAbility* Ability = Spec.Ability.Get())
+		{
+			return Ability->CheckCost(Spec.Handle, ASC->AbilityActorInfo.Get());
+		}
+	}
+
+	return true;
 }
 
 void USHGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
