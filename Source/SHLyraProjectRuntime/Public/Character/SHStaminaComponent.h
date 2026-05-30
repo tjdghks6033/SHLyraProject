@@ -2,14 +2,15 @@
 
 #pragma once
 
-#include "Components/GameFrameworkComponent.h"
-#include "GameplayAbilitySpec.h"
+#include "Character/SHResourceComponent.h"
 
 #include "SHStaminaComponent.generated.h"
 
 class UAbilitySystemComponent;
+class UGameplayAbility;
 class UGameplayEffect;
 class USHStaminaSet;
+struct FGameplayEffectSpec;
 
 // -------------------------------------------------------
 // 메시지 구조체: GameplayMessageSubsystem을 통해
@@ -41,26 +42,23 @@ struct FSHStaminaChangedMessage
 // -------------------------------------------------------
 // USHStaminaComponent
 //
-// USHStaminaSet의 이벤트를 구독하여 스태미나 상태를 관리하는 컴포넌트.
+// USHStaminaSet 기반 스태미나 자원 컴포넌트. 공통 골격은 USHResourceComponent가
+// 담당하고, 이 클래스는 스태미나 타입 특화 훅만 구현한다.
 //
-// 주요 역할:
-//   1. ASC 준비 완료 후 USHStaminaSet 델리게이트 바인딩
-//   2. 스태미나 소진/회복 시 GameplayTag 관리 (SH.Status.OutOfStamina)
-//   3. GameplayMessageSubsystem으로 SH.Message.Stamina.Changed 브로드캐스트
-//   4. Regen GE 최적화 관리:
-//      - 스태미나가 가득 차면 Regen GE 제거 (불필요한 틱 차단)
-//      - 스태미나가 소비되면 Regen GE 재적용
+// 추가로, ShooterCore의 GA_Hero_Dash는 무수정 원칙상 코스트 GE를 박을 수 없는
+// 빌려온 어빌리티이므로, OnPostInitialize에서 AbilityActivatedCallbacks를 감시해
+// 대쉬 발동 시 StaminaDashCostEffect를 외부에서 적용한다. (마나엔 없는 비대칭)
 //
 // GameFeatureAction_AddComponents를 통해 ALyraCharacter에 주입됩니다.
 // -------------------------------------------------------
 UCLASS(Blueprintable, Meta=(BlueprintSpawnableComponent))
-class SHLYRAPROJECTRUNTIME_API USHStaminaComponent : public UGameFrameworkComponent
+class SHLYRAPROJECTRUNTIME_API USHStaminaComponent : public USHResourceComponent
 {
 	GENERATED_BODY()
 
 public:
 
-	USHStaminaComponent(const FObjectInitializer& ObjectInitializer);
+	USHStaminaComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	// 같은 액터에서 이 컴포넌트를 찾는 편의 함수
 	UFUNCTION(BlueprintPure, Category = "SH|Stamina")
@@ -71,30 +69,33 @@ public:
 
 	// 현재 스태미나를 0~1 범위로 반환 (UI용)
 	UFUNCTION(BlueprintCallable, Category = "SH|Stamina")
-	float GetStaminaNormalized() const;
+	float GetStaminaNormalized() const { return GetValueNormalized(); }
 
 	// 스태미나가 0인 상태 여부
 	UFUNCTION(BlueprintCallable, Category = "SH|Stamina")
-	bool IsOutOfStamina() const;
+	bool IsOutOfStamina() const { return IsResourceDepleted(); }
 
 protected:
 
-	// -------------------------------------------------------
-	// 컴포넌트 수명주기
-	// -------------------------------------------------------
+	//~ USHResourceComponent 타입별 훅
+	virtual bool ResolveAttributeSet(UAbilitySystemComponent* ASC) override;
+	virtual void BindValueDelegates() override;
+	virtual void ReleaseAttributeSet() override;
+	virtual float GetCurrentValue() const override;
+	virtual float GetMaxValue() const override;
+	virtual FGameplayTag GetDepletedStatusTag() const override;
+	virtual FGameplayTag GetBlockedAbilityTag() const override;
+	virtual TSubclassOf<UGameplayEffect> GetRegenEffect() const override;
+	virtual float GetCostThreshold() const override;
+	virtual void BroadcastChange(float CurrentValue, float MaxValue) const override;
 
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	// 대쉬 코스트 외부 적용을 위한 AbilityActivatedCallbacks 감시 (스태미나 고유).
+	virtual void OnPostInitialize() override;
+	virtual void OnPreUninitialize() override;
+	//~ End of USHResourceComponent 타입별 훅
 
 	// -------------------------------------------------------
-	// ASC 초기화 콜백
-	// -------------------------------------------------------
-
-	void OnAbilitySystemInitialized();
-	void OnAbilitySystemUninitialized();
-
-	// -------------------------------------------------------
-	// USHStaminaSet 델리게이트 핸들러
+	// USHStaminaSet 델리게이트 핸들러 — 베이스 공통 로직으로 위임한다.
 	// -------------------------------------------------------
 
 	// 스태미나 값이 변경될 때 호출 (서버: GE 실행 후 / 클라이언트: OnRep)
@@ -107,40 +108,21 @@ protected:
 		const FGameplayEffectSpec* Spec, float Magnitude,
 		float OldValue, float NewValue);
 
-	// -------------------------------------------------------
-	// Regen GE 관리
-	//
-	// Regen은 스태미나가 MaxStamina 미만일 때만 활성화합니다.
-	// 가득 찬 상태에서는 GE를 제거해 불필요한 Periodic 틱을 차단합니다.
-	// -------------------------------------------------------
-
-	void ApplyRegenEffect();
-	void RemoveRegenEffect();
-
-	// -------------------------------------------------------
-	// 내부 처리
-	// -------------------------------------------------------
-
-	// GameplayMessageSubsystem으로 UI에 스태미나 정보 브로드캐스트
-	void BroadcastStaminaChange(float CurrentStamina, float MaxStamina);
-
 	// ASC::OnAbilityActivated 콜백: Ability.Type.Action.Dash 태그를 가진
 	// 어빌리티가 활성화되면 StaminaDashCostEffect를 적용합니다.
 	void HandleAbilityActivated(UGameplayAbility* ActivatedAbility);
 
 	// -------------------------------------------------------
-	// 멤버 변수
+	// 스태미나 특화 설정/멤버
 	// -------------------------------------------------------
 
 	// Periodic GE로 구현된 스태미나 회복 이펙트.
 	// DA_SHAbilitySet에 등록하지 않고 이 컴포넌트가 직접 관리합니다.
-	// 스태미나가 소비될 때 적용, 가득 찼을 때 제거합니다.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Stamina|Regen")
 	TSubclassOf<UGameplayEffect> StaminaRegenEffect;
 
 	// 대쉬 어빌리티(Ability.Type.Action.Dash) 활성화 시 적용되는 스태미나 소비 GE.
 	// SHStaminaSet.StaminaCost를 설정해 Stamina를 차감합니다.
-	// BP_SHStaminaComponent에서 GE_SHStaminaDashCost를 지정합니다.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Stamina|DashCost")
 	TSubclassOf<UGameplayEffect> StaminaDashCostEffect;
 
@@ -149,20 +131,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Stamina|DashCost")
 	float DashStaminaCostThreshold = 50.0f;
 
-	// ASC 초기화 이후 캐싱됩니다. Regen GE 적용/제거에 사용합니다.
-	UPROPERTY()
-	TObjectPtr<UAbilitySystemComponent> CachedASC;
-
-	// 현재 활성화된 Regen GE의 핸들. 제거 시 이 핸들로 식별합니다.
-	FActiveGameplayEffectHandle RegenEffectHandle;
-
 	// ASC에서 가져온 스태미나 어트리뷰트 셋 (읽기 전용 참조)
 	UPROPERTY()
 	TObjectPtr<const USHStaminaSet> StaminaSet;
-
-	// 스태미나 소진 상태 플래그 (중복 처리 방지)
-	bool bIsOutOfStamina = false;
-
-	// 대쉬가 현재 차단된 상태인지 추적합니다 (중복 Block/Unblock 호출 방지).
-	bool bDashBlocked = false;
 };
