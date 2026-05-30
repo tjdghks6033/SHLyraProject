@@ -119,9 +119,13 @@ protected:
 	float SlamZForce = 2000.f;
 
 	// ── 범위 / 위치 ───────────────────────────────────────
-	// 발동 가능 최대 거리 (cm). 이 범위 내에 적이 없으면 어빌리티 취소.
+	// 전방 타겟 탐색 거리 (cm). 플레이어 정면으로 이 거리만큼 스윕하고, 적이 없으면 어빌리티 취소.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo", meta = (ClampMin = "1.0"))
 	float TargetSearchRange = 400.f;
+
+	// 전방 탐색 스윕의 구체 반경 (cm). 클수록 정면에서 약간 빗나가도 잡힌다.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo", meta = (ClampMin = "1.0"))
+	float TargetSearchRadius = 200.f;
 
 	// 텔레포트 시 보스로부터 플레이어가 떨어질 거리 (cm)
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo", meta = (ClampMin = "0.0"))
@@ -164,16 +168,9 @@ private:
 	UFUNCTION() void OnSlamEventReceived(FGameplayEventData Payload);
 
 	// ── 헬퍼 ─────────────────────────────────────────────
-	// 가장 가까운 적 ASC 보유 Pawn 반환 (TargetSearchRange 이내)
-	ACharacter* FindNearestEnemy() const;
-
-	// 플레이어 PlayerController 에 ClientStartCameraShake 호출
-	void PlayCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale = 1.0f) const;
-
-	// GE를 보스 ASC에 적용 (InstigatorASC = 플레이어), 핸들 반환
-	FActiveGameplayEffectHandle ApplyEffectToTarget(TSubclassOf<UGameplayEffect> EffectClass,
-		UAbilitySystemComponent* InstigatorASC,
-		UAbilitySystemComponent* TargetASC) const;
+	// 플레이어 정면을 구체 스윕해 가장 가까운 ASC 보유 캐릭터를 반환 (TargetSearchRange/Radius 사용).
+	// 눈앞에 적이 없으면 nullptr → ActivateAbility에서 즉시 EndAbility.
+	ACharacter* FindTargetInFront() const;
 
 	// 현재 타겟 (Phase 1에서 찾아 이후 단계 내내 재사용)
 	TWeakObjectPtr<ACharacter> TargetCharacter;

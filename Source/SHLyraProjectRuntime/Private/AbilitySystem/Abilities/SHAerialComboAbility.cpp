@@ -12,6 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "NativeGameplayTags.h"
 
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Event_AerialCombo_Launch, "Event.SH.AerialCombo.Launch");
@@ -39,12 +40,9 @@ void USHAerialComboAbility::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		return;
 	}
 
-	TargetCharacter = FindNearestEnemy();
-	if (!TargetCharacter.IsValid())
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
+	// 타겟은 여기서 찾지 않는다. 런치 선동작을 먼저 재생하고,
+	// 그 안의 타격 프레임(OnLaunchEventReceived)에서 정면 타겟을 확정한다.
+	// 눈앞에 적이 없으면 헛스윙 — 선동작만 재생되고 종료된다.
 
 	if (UltimateCameraMode)
 	{
@@ -102,6 +100,8 @@ void USHAerialComboAbility::StartLaunchPhase()
 {
 	if (!LaunchMontage)
 	{
+		// 선동작이 없으면 타격 프레임도 없으므로, 여기서 타겟을 확정하고 다음 단계로 넘긴다.
+		TargetCharacter = FindTargetInFront();
 		StartTeleportPhase();
 		return;
 	}
@@ -126,7 +126,16 @@ void USHAerialComboAbility::StartLaunchPhase()
 
 void USHAerialComboAbility::OnLaunchEventReceived(FGameplayEventData Payload)
 {
-	if (!HasAuthority(&CurrentActivationInfo) || !TargetCharacter.IsValid())
+	if (!HasAuthority(&CurrentActivationInfo))
+	{
+		return;
+	}
+
+	// 런치 선동작의 타격 프레임에서 정면 타겟을 확정한다.
+	// 눈앞에 적이 없으면 헛스윙 — 보스 처리 없이 종료하고, 몽타주가 끝나면
+	// StartTeleportPhase가 타겟 null을 보고 EndAbility 한다.
+	TargetCharacter = FindTargetInFront();
+	if (!TargetCharacter.IsValid())
 	{
 		return;
 	}
@@ -360,7 +369,7 @@ void USHAerialComboAbility::OnSlamMontageCancelled()
 // 헬퍼
 // ─────────────────────────────────────────────────────────────────────────────
 
-ACharacter* USHAerialComboAbility::FindNearestEnemy() const
+ACharacter* USHAerialComboAbility::FindTargetInFront() const
 {
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	if (!AvatarActor)
@@ -368,66 +377,38 @@ ACharacter* USHAerialComboAbility::FindNearestEnemy() const
 		return nullptr;
 	}
 
-	// 범위 제한 없이 월드 전체에서 검색 — 궁극기는 어디서든 발동 후 텔레포트로 이동
-	TArray<AActor*> AllCharacters;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), AllCharacters);
+	// 플레이어 정면으로 구체 스윕 — 눈앞에 적이 없으면 nullptr 반환(→ 발동 취소).
+	const FVector Start = AvatarActor->GetActorLocation();
+	const FVector End   = Start + AvatarActor->GetActorForwardVector() * TargetSearchRange;
 
-	ACharacter* Nearest     = nullptr;
-	float       NearestDist = FLT_MAX;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
 
-	for (AActor* Actor : AllCharacters)
+	TArray<FHitResult> Hits;
+	UKismetSystemLibrary::SphereTraceMultiForObjects(
+		AvatarActor, Start, End, TargetSearchRadius, ObjectTypes,
+		false, TArray<AActor*>(), EDrawDebugTrace::None, Hits, /*bIgnoreSelf=*/true);
+
+	// 스윕에 걸린 것 중 가장 가까운 ASC 보유 캐릭터를 타겟으로 선택.
+	// ASC 없는 폰(소품 등)이 더 가까이 껴 있어도 건너뛰고 실제 적을 고른다.
+	ACharacter* Target      = nullptr;
+	float       ClosestDist = FLT_MAX;
+
+	for (const FHitResult& Hit : Hits)
 	{
-		if (Actor == AvatarActor)
+		ACharacter* HitChar = Cast<ACharacter>(Hit.GetActor());
+		if (!HitChar || !UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitChar))
 		{
 			continue;
 		}
-		if (!UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Actor))
-		{
-			continue;
-		}
 
-		const float Dist = FVector::Dist(AvatarActor->GetActorLocation(), Actor->GetActorLocation());
-		if (Dist < NearestDist)
+		const float Dist = FVector::Dist(Start, HitChar->GetActorLocation());
+		if (Dist < ClosestDist)
 		{
-			NearestDist = Dist;
-			Nearest     = Cast<ACharacter>(Actor);
+			ClosestDist = Dist;
+			Target      = HitChar;
 		}
 	}
 
-	return Nearest;
-}
-
-void USHAerialComboAbility::PlayCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale) const
-{
-	if (!ShakeClass)
-	{
-		return;
-	}
-
-	if (APlayerController* PC = Cast<APlayerController>(
-		GetActorInfo().PlayerController.Get()))
-	{
-		PC->ClientStartCameraShake(ShakeClass, Scale);
-	}
-}
-
-FActiveGameplayEffectHandle USHAerialComboAbility::ApplyEffectToTarget(TSubclassOf<UGameplayEffect> EffectClass,
-	UAbilitySystemComponent* InstigatorASC,
-	UAbilitySystemComponent* TargetASC) const
-{
-	if (!EffectClass || !InstigatorASC || !TargetASC)
-	{
-		return FActiveGameplayEffectHandle();
-	}
-
-	FGameplayEffectContextHandle Context = InstigatorASC->MakeEffectContext();
-	FGameplayEffectSpecHandle    Spec    =
-		InstigatorASC->MakeOutgoingSpec(EffectClass, GetAbilityLevel(), Context);
-
-	if (Spec.IsValid())
-	{
-		return InstigatorASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
-	}
-
-	return FActiveGameplayEffectHandle();
+	return Target;
 }
