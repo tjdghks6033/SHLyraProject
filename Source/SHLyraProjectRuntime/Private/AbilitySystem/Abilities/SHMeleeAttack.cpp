@@ -2,12 +2,7 @@
 
 #include "AbilitySystem/Abilities/SHMeleeAttack.h"
 
-#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
-#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
-#include "AbilitySystemComponent.h"
-#include "AbilitySystemBlueprintLibrary.h"
 #include "Components/StaticMeshComponent.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "NativeGameplayTags.h"
 
 // 히트 판정 시점을 알리는 Gameplay Event 태그.
@@ -26,98 +21,24 @@ USHMeleeAttack::USHMeleeAttack(const FObjectInitializer& ObjectInitializer)
 	ActivationPolicy = ELyraAbilityActivationPolicy::OnInputTriggered;
 }
 
-void USHMeleeAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo,
-	const FGameplayAbilityActivationInfo ActivationInfo,
-	const FGameplayEventData* TriggerEventData)
+FGameplayTag USHMeleeAttack::GetHitDetectTag() const
 {
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	// 비용(스태미나) + 쿨다운 적용. 실패 시 즉시 종료.
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
-	if (!AttackMontage)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("USHMeleeAttack: AttackMontage가 설정되지 않았습니다."));
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
-	// 1. 공격 몽타주 재생 태스크
-	UAbilityTask_PlayMontageAndWait* MontageTask =
-		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-			this, NAME_None, AttackMontage, 1.0f, NAME_None, true);
-
-	MontageTask->OnCompleted.AddDynamic(this, &USHMeleeAttack::OnMontageCompleted);
-	MontageTask->OnBlendOut.AddDynamic(this, &USHMeleeAttack::OnMontageCompleted);
-	MontageTask->OnCancelled.AddDynamic(this, &USHMeleeAttack::OnMontageCancelled);
-	MontageTask->OnInterrupted.AddDynamic(this, &USHMeleeAttack::OnMontageCancelled);
-	MontageTask->ReadyForActivation();
-
-	// 2. AnimNotify 발화 시점 대기 태스크 (AnimNotify_GameplayEvent → HitDetect 태그)
-	//    OnlyTriggerOnce=false: 한 공격 내에서 여러 번 판정이 필요한 경우를 대비
-	UAbilityTask_WaitGameplayEvent* WaitEventTask =
-		UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-			this, TAG_Event_SH_Melee_HitDetect, nullptr, false, true);
-
-	WaitEventTask->EventReceived.AddDynamic(this, &USHMeleeAttack::OnGameplayEventReceived);
-	WaitEventTask->ReadyForActivation();
+	return TAG_Event_SH_Melee_HitDetect;
 }
 
-void USHMeleeAttack::EndAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo,
-	const FGameplayAbilityActivationInfo ActivationInfo,
-	bool bReplicateEndAbility, bool bWasCancelled)
-{
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-void USHMeleeAttack::OnMontageCompleted()
-{
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-}
-
-void USHMeleeAttack::OnMontageCancelled()
-{
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
-}
-
-void USHMeleeAttack::OnGameplayEventReceived(FGameplayEventData Payload)
-{
-	// 히트 판정은 서버(Authority)에서만 실행한다.
-	// 싱글플레이어/Listen Server 에서는 항상 true.
-	if (HasAuthority(&CurrentActivationInfo))
-	{
-		PerformMeleeHit(CurrentActorInfo);
-	}
-}
-
-void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
+bool USHMeleeAttack::ComputeHitTrace(const FGameplayAbilityActorInfo* ActorInfo,
+	FVector& OutStart, FVector& OutEnd, float& OutRadius) const
 {
 	AActor* AvatarActor = ActorInfo->AvatarActor.Get();
-	if (!AvatarActor || !DamageEffect)
+	if (!AvatarActor)
 	{
-		return;
+		return false;
 	}
 
-	UAbilitySystemComponent* InstigatorASC = ActorInfo->AbilitySystemComponent.Get();
-	if (!InstigatorASC)
-	{
-		return;
-	}
+	OutRadius = SweepRadius;
 
-	// WeaponMesh 컴포넌트에서 소켓 위치를 가져온다.
-	// 소켓이 없으면 캐릭터 전방 구체 트레이스로 폴백한다.
-	FVector TraceStart;
-	FVector TraceEnd;
-
+	// WeaponMesh 컴포넌트를 이름으로 찾는다.
 	UStaticMeshComponent* WeaponMesh = nullptr;
-
-	// 이름으로 정확히 찾기
 	for (UActorComponent* Comp : AvatarActor->GetComponents())
 	{
 		if (Comp->GetFName() == WeaponMeshComponentName)
@@ -134,60 +55,15 @@ void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
 	if (bHasSockets)
 	{
 		// 소켓 기반 Sweep: WeaponHilt → WeaponTip
-		TraceStart = WeaponMesh->GetSocketLocation(HiltSocketName);
-		TraceEnd   = WeaponMesh->GetSocketLocation(TipSocketName);
+		OutStart = WeaponMesh->GetSocketLocation(HiltSocketName);
+		OutEnd   = WeaponMesh->GetSocketLocation(TipSocketName);
 	}
 	else
 	{
 		// 폴백: 캐릭터 중심(60cm 높이)에서 전방으로 구체 트레이스
-		TraceStart = AvatarActor->GetActorLocation() + FVector(0.f, 0.f, 60.f);
-		TraceEnd   = TraceStart + AvatarActor->GetActorForwardVector() * FallbackTraceRange;
+		OutStart = AvatarActor->GetActorLocation() + FVector(0.f, 0.f, 60.f);
+		OutEnd   = OutStart + AvatarActor->GetActorForwardVector() * FallbackTraceRange;
 	}
 
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-
-	const EDrawDebugTrace::Type DebugType = bDrawDebugTrace
-		? EDrawDebugTrace::ForDuration
-		: EDrawDebugTrace::None;
-
-	TArray<FHitResult> HitResults;
-	UKismetSystemLibrary::SphereTraceMultiForObjects(
-		AvatarActor,
-		TraceStart,
-		TraceEnd,
-		SweepRadius,
-		ObjectTypes,
-		false,               // bTraceComplex
-		TArray<AActor*>(),   // ActorsToIgnore (bIgnoreSelf 가 자신을 제외)
-		DebugType,
-		HitResults,
-		true                 // bIgnoreSelf
-	);
-
-	// 한 번의 공격에서 같은 대상에게 중복 데미지 방지
-	TSet<AActor*> DamagedActors;
-
-	for (const FHitResult& Hit : HitResults)
-	{
-		AActor* HitActor = Hit.GetActor();
-		if (!HitActor || DamagedActors.Contains(HitActor))
-		{
-			continue;
-		}
-
-		UAbilitySystemComponent* TargetASC =
-			UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
-
-		if (!TargetASC)
-		{
-			continue;
-		}
-
-		// 데미지 적용. HitResult를 넘겨 컨텍스트에 히트 정보를 싣는다.
-		// 빙결 등 상태이상에 따른 배율은 USHDamageExecution이 처리한다.
-		ApplyEffectToTarget(DamageEffect, InstigatorASC, TargetASC, &Hit);
-
-		DamagedActors.Add(HitActor);
-	}
+	return true;
 }
