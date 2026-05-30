@@ -6,8 +6,10 @@
 #include "GameplayEffect.h"
 #include "AbilitySystem/Attributes/SHManaSet.h"
 #include "AbilitySystem/Attributes/SHStaminaSet.h"
+#include "Camera/CameraShakeBase.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 
 USHGameplayAbility::USHGameplayAbility(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -164,4 +166,42 @@ void USHGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	LockedCharacter.Reset();
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+FActiveGameplayEffectHandle USHGameplayAbility::ApplyEffectToTarget(TSubclassOf<UGameplayEffect> EffectClass,
+	UAbilitySystemComponent* InstigatorASC,
+	UAbilitySystemComponent* TargetASC,
+	const FHitResult* HitResult) const
+{
+	if (!EffectClass || !InstigatorASC || !TargetASC)
+	{
+		return FActiveGameplayEffectHandle();
+	}
+
+	FGameplayEffectContextHandle Context = InstigatorASC->MakeEffectContext();
+	if (HitResult)
+	{
+		Context.AddHitResult(*HitResult);
+	}
+
+	FGameplayEffectSpecHandle Spec = InstigatorASC->MakeOutgoingSpec(EffectClass, GetAbilityLevel(), Context);
+	if (Spec.IsValid())
+	{
+		return InstigatorASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+	}
+
+	return FActiveGameplayEffectHandle();
+}
+
+void USHGameplayAbility::PlayCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale) const
+{
+	if (!ShakeClass)
+	{
+		return;
+	}
+
+	if (APlayerController* PC = Cast<APlayerController>(GetActorInfo().PlayerController.Get()))
+	{
+		PC->ClientStartCameraShake(ShakeClass, Scale);
+	}
 }

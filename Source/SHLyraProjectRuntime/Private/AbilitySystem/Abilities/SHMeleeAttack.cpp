@@ -184,17 +184,9 @@ void USHMeleeAttack::PerformMeleeHit(const FGameplayAbilityActorInfo* ActorInfo)
 			continue;
 		}
 
-		// 어빌리티 컨텍스트(인스티게이터, 레벨 등)가 담긴 GE 스펙 생성 후 대상에 적용
-		FGameplayEffectContextHandle Context = InstigatorASC->MakeEffectContext();
-		Context.AddHitResult(Hit);
-		FGameplayEffectSpecHandle SpecHandle =
-			InstigatorASC->MakeOutgoingSpec(DamageEffect, GetAbilityLevel(), Context);
-
-		if (SpecHandle.IsValid())
-		{
-			// 데미지 적용. 빙결 등 상태이상에 따른 배율은 USHDamageExecution이 처리한다.
-			InstigatorASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-		}
+		// 데미지 적용. HitResult를 넘겨 컨텍스트에 히트 정보를 싣는다.
+		// 빙결 등 상태이상에 따른 배율은 USHDamageExecution이 처리한다.
+		ApplyEffectToTarget(DamageEffect, InstigatorASC, TargetASC, &Hit);
 
 		DamagedActors.Add(HitActor);
 	}

@@ -4,12 +4,16 @@
 
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "GameplayTagContainer.h"
+#include "GameplayEffectTypes.h"
 
 #include "SHGameplayAbility.generated.h"
 
 class ACharacter;
 class UAbilitySystemComponent;
+class UCameraShakeBase;
+class UGameplayEffect;
 class UTexture2D;
+struct FHitResult;
 
 /**
  * USHGameplayAbility
@@ -71,6 +75,17 @@ protected:
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		bool bReplicateEndAbility, bool bWasCancelled) override;
 	//~ End of UGameplayAbility interface
+
+	// ── 공용 헬퍼 ─────────────────────────────────────────────
+	// GE를 대상 ASC에 적용하고 ActiveGameplayEffectHandle을 반환한다.
+	// HitResult를 넘기면 EffectContext에 추가되어 USHDamageExecution이 히트 정보를 활용한다.
+	FActiveGameplayEffectHandle ApplyEffectToTarget(TSubclassOf<UGameplayEffect> EffectClass,
+		UAbilitySystemComponent* InstigatorASC,
+		UAbilitySystemComponent* TargetASC,
+		const FHitResult* HitResult = nullptr) const;
+
+	// 로컬 플레이어 카메라에 셰이크를 재생한다(PlayerController->ClientStartCameraShake).
+	void PlayCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale = 1.0f) const;
 
 	// 스킬바 슬롯에 표시할 아이콘.
 	// WBP_SHSkillSlot이 InputTag로 이 CDO를 찾아 자동으로 읽는다.

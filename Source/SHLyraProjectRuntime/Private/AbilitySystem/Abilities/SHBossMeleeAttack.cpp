@@ -158,15 +158,8 @@ void USHBossMeleeAttack::PerformBossHit(const FGameplayAbilityActorInfo* ActorIn
 			continue;
 		}
 
-		FGameplayEffectContextHandle Context = InstigatorASC->MakeEffectContext();
-		Context.AddHitResult(Hit);
-		FGameplayEffectSpecHandle SpecHandle =
-			InstigatorASC->MakeOutgoingSpec(DamageEffect, GetAbilityLevel(), Context);
-
-		if (SpecHandle.IsValid())
-		{
-			InstigatorASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-		}
+		// 데미지 적용. HitResult를 컨텍스트에 실어 USHDamageExecution이 히트 정보를 활용하게 한다.
+		ApplyEffectToTarget(DamageEffect, InstigatorASC, TargetASC, &Hit);
 
 		DamagedActors.Add(HitActor);
 	}
