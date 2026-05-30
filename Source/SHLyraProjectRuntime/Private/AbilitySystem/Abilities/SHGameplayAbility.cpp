@@ -43,7 +43,6 @@ bool USHGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle,
 	}
 
 	const UGameplayEffect* CostGE = GetCostGameplayEffect();
-	UE_LOG(LogTemp, Warning, TEXT("[CheckCost] CostGE=%s"), CostGE ? *CostGE->GetName() : TEXT("NULL"));
 	if (!CostGE || !ActorInfo)
 	{
 		return true;
@@ -62,14 +61,12 @@ bool USHGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle,
 	{
 		if (Mod.ModifierOp != EGameplayModOp::Additive)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[CheckCost] Mod skipped: not Additive"));
 			continue;
 		}
 
 		float Magnitude = 0.0f;
 		if (!Mod.ModifierMagnitude.GetStaticMagnitudeIfPossible(AbilityLevel, Magnitude) || Magnitude <= 0.0f)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[CheckCost] Mod skipped: GetStaticMagnitude failed or Magnitude=%.1f"), Magnitude);
 			continue;
 		}
 
@@ -84,14 +81,11 @@ bool USHGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle,
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[CheckCost] Mod skipped: unknown attribute %s"), *Mod.Attribute.GetName());
 			continue;
 		}
 
 		bool bFound = false;
 		const float CurrentValue = ASC->GetGameplayAttributeValue(ResourceAttribute, bFound);
-		UE_LOG(LogTemp, Warning, TEXT("[CheckCost] Cost=%.1f, Current=%.1f, bFound=%d → %s"),
-			Magnitude, CurrentValue, (int32)bFound, (bFound && CurrentValue < Magnitude) ? TEXT("CANNOT PAY") : TEXT("can pay"));
 
 		if (bFound && CurrentValue < Magnitude)
 		{
