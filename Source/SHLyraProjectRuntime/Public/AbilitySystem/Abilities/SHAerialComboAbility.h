@@ -69,6 +69,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Montage")
 	TObjectPtr<UAnimMontage> GroundSlamMontage;
 
+	// 공중 콤보 히트 시 보스에 재생할 피격 반응 몽타주
+	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Montage")
+	TObjectPtr<UAnimMontage> BossAirborneHitReactMontage;
+
 	// ── GameplayEffect ───────────────────────────────────────
 	// 보스에 적용: Status.SH.Launched 부여 — Duration Policy: Infinite (코드에서 Slam 시 제거)
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Effects")

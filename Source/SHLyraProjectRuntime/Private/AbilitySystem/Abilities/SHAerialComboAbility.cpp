@@ -256,6 +256,12 @@ void USHAerialComboAbility::OnAerialHitEventReceived(FGameplayEventData Payload)
 		UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetCharacter.Get());
 
 	ApplyEffectToTarget(AerialHitDamageEffect, InstigatorASC, TargetASC);
+
+	if (BossAirborneHitReactMontage)
+	{
+		TargetCharacter->PlayAnimMontage(BossAirborneHitReactMontage);
+	}
+
 	PlayCameraShake(AerialHitShake);
 
 	// 히트 VFX — 보스 위치 기준 Execute
