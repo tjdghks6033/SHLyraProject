@@ -6,8 +6,8 @@
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "NativeGameplayTags.h"
 
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_SH_Message_Boss_Engaged, "SH.Message.Boss.Engaged");
-UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_SH_Message_Boss_Defeated, "SH.Message.Boss.Defeated");
+UE_DEFINE_GAMEPLAY_TAG(TAG_SH_Message_Boss_Engaged, "SH.Message.Boss.Engaged");
+UE_DEFINE_GAMEPLAY_TAG(TAG_SH_Message_Boss_Defeated, "SH.Message.Boss.Defeated");
 
 ASHEnemyBoss::ASHEnemyBoss(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -17,11 +17,7 @@ ASHEnemyBoss::ASHEnemyBoss(const FObjectInitializer& ObjectInitializer)
 void ASHEnemyBoss::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UGameplayMessageSubsystem& MsgSys = UGameplayMessageSubsystem::Get(this);
-	FSHBossMessage Payload;
-	Payload.BossActor = this;
-	MsgSys.BroadcastMessage(TAG_SH_Message_Boss_Engaged, Payload);
+	// SH.Message.Boss.Engaged는 ASHBossSpawner가 컷씬 종료 후 브로드캐스트한다.
 }
 
 void ASHEnemyBoss::OnDeathStarted(AActor* OwningActor)

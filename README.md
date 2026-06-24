@@ -59,7 +59,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 
 | 시스템 | 설명 |
 |--------|------|
-| `ASHEnemyBoss` + `ASHBossSpawner` | Experience 로드 후 보스 스폰, PawnData 수동 주입, ASC 초기화 직접 호출 |
+| `ASHEnemyBoss` + `ASHBossSpawner` | Experience 로드 후 컷씬 재생(Sequencer Spawnable) → 종료 후 보스 스폰. PawnData 수동 주입, ASC 초기화 직접 호출. `SetCinematicMode`로 HUD 차단, `SetViewTarget`으로 카메라 복원 |
 | `ASHBossController` + `BT_SHBoss` | BehaviorTree 기반 AI — HP/거리 조건으로 Phase 1/2 패턴 전환 |
 | `BTDecorator_SHCheckDistance` | 보스↔플레이어 거리 비교 커스텀 C++ Decorator |
 | `BTTask_SHActivateAbility` | `TryActivateAbilitiesByTag` 래핑 범용 BT 노드, `bWaitForAbilityEnd` latent 옵션 |

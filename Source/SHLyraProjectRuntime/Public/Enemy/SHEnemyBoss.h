@@ -3,8 +3,13 @@
 #pragma once
 
 #include "Enemy/SHEnemyBase.h"
+#include "NativeGameplayTags.h"
 
 #include "SHEnemyBoss.generated.h"
+
+// 보스 등장 시 브로드캐스트. SHBossCreationComponent가 컷씬 종료 후 발화한다.
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_SH_Message_Boss_Engaged);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_SH_Message_Boss_Defeated);
 
 class UGameplayEffect;
 

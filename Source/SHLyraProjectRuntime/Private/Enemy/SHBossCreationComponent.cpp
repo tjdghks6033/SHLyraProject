@@ -4,7 +4,11 @@
 #include "AI/SHBossController.h"
 #include "Character/LyraPawnExtensionComponent.h"
 #include "Enemy/SHEnemyBoss.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "GameModes/LyraExperienceManagerComponent.h"
+#include "LevelSequence.h"
+#include "LevelSequenceActor.h"
+#include "LevelSequencePlayer.h"
 #include "Player/LyraPlayerState.h"
 
 ASHBossSpawner::ASHBossSpawner(const FObjectInitializer& ObjectInitializer)
@@ -40,7 +44,7 @@ void ASHBossSpawner::BeginPlay()
 
 void ASHBossSpawner::OnExperienceLoaded(const ULyraExperienceDefinition* /*Experience*/)
 {
-	ServerSpawnBoss();
+	PlayIntroOrEngage();
 }
 
 void ASHBossSpawner::ServerSpawnBoss()
@@ -102,4 +106,75 @@ void ASHBossSpawner::ServerSpawnBoss()
 		}
 	}
 
+	SpawnedBoss = BossPawn;
+	BroadcastBossEngaged();
+}
+
+void ASHBossSpawner::PlayIntroOrEngage()
+{
+	if (!IntroSequence)
+	{
+		ServerSpawnBoss();
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		ServerSpawnBoss();
+		return;
+	}
+
+	// 컷씬 재생 중 HUD 숨김 + 이동·시점 입력 차단.
+	if (APlayerController* PC = World->GetFirstPlayerController())
+	{
+		PC->SetCinematicMode(true, false, true, true, true);
+	}
+
+	ALevelSequenceActor* SequenceActor = nullptr;
+	FMovieSceneSequencePlaybackSettings Settings;
+	IntroSequencePlayer = ULevelSequencePlayer::CreateLevelSequencePlayer(
+		World, IntroSequence, Settings, SequenceActor);
+
+	if (!IntroSequencePlayer)
+	{
+		ServerSpawnBoss();
+		return;
+	}
+
+	IntroSequencePlayer->OnFinished.AddDynamic(this, &ThisClass::OnIntroSequenceFinished);
+	IntroSequencePlayer->Play();
+}
+
+void ASHBossSpawner::OnIntroSequenceFinished()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			PC->SetCinematicMode(false, false, true, true, true);
+
+			// Camera Cut 트랙이 뷰 타겟을 CineCameraActor로 교체한 채 끝나므로
+			// 플레이어 폰으로 명시적으로 복원한다.
+			if (APawn* Pawn = PC->GetPawn())
+			{
+				PC->SetViewTarget(Pawn);
+			}
+		}
+	}
+
+	ServerSpawnBoss();
+}
+
+void ASHBossSpawner::BroadcastBossEngaged()
+{
+	if (!SpawnedBoss)
+	{
+		return;
+	}
+
+	UGameplayMessageSubsystem& MsgSys = UGameplayMessageSubsystem::Get(this);
+	FSHBossMessage Payload;
+	Payload.BossActor = SpawnedBoss;
+	MsgSys.BroadcastMessage(TAG_SH_Message_Boss_Engaged, Payload);
 }

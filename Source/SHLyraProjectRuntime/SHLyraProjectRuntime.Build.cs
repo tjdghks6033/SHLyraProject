@@ -30,6 +30,8 @@ public class SHLyraProjectRuntime : ModuleRules
 			"AIModule",
 			"NavigationSystem",
 			"Niagara",
+			"LevelSequence",
+			"MovieScene",
 		});
 	}
 }
