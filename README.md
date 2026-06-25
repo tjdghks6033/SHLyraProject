@@ -63,6 +63,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `ASHBossController` + `BT_SHBoss` | BehaviorTree 기반 AI — HP/거리 조건으로 Phase 1/2 패턴 전환 |
 | `BTDecorator_SHCheckDistance` | 보스↔플레이어 거리 비교 커스텀 C++ Decorator |
 | `BTTask_SHActivateAbility` | `TryActivateAbilitiesByTag` 래핑 범용 BT 노드, `bWaitForAbilityEnd` latent 옵션 |
+| `BTTask_SHStrafe` | 플레이어 기준 반경 원호 이동 — 좌/우 랜덤, `PathFollowingComponent::OnRequestFinished` latent 완료 감지 |
 | `GA_SHBossMelee` | AnimNotify(`Event.SH.Boss.HitDetect`) + `hand_r` 소켓 SphereTrace + GE 적용 |
 
 ### HUD / UI
@@ -154,11 +155,13 @@ SHLyraProject (GameFeaturePlugin)
 ```
 BT_SHBoss
 └── Selector
-    ├── [Decorator: HPPercent ≤ 0.5]  Phase 2 (쿨다운 단축)
+    ├── [Decorator: HPPercent ≤ 0.5]  Phase 2 (쿨다운 단축, 압박 강화)
     │   ├── [Decorator: Distance < 250]  BTTask_SHActivateAbility(Boss.Melee)
+    │   ├── BTTask_SHStrafe (StrafeArcDegrees=40°)
     │   └── BTTask_SHActivateAbility(Boss.Fireball)
     └── Phase 1 (기본)
         ├── [Decorator: Distance < 250]  BTTask_SHActivateAbility(Boss.Melee)
+        ├── BTTask_SHStrafe (StrafeArcDegrees=60°)
         └── BTTask_SHActivateAbility(Boss.Fireball)
 ```
 
