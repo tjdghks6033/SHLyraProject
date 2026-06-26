@@ -4,6 +4,7 @@
 
 #include "Abilities/Tasks/AbilityTask_ApplyRootMotionConstantForce.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/RootMotionSource.h"
@@ -75,6 +76,18 @@ void USHDash::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 	DashTask->OnFinish.AddDynamic(this, &USHDash::OnDashFinished);
 	DashTask->ReadyForActivation();
+
+	// 잔상 GameplayCue — Execute(Burst) 방식으로 한 번 발사, Niagara 수명 동안 재생
+	if (GhostTrailCueTag.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+		{
+			FGameplayCueParameters CueParams;
+			CueParams.Location     = Character->GetActorLocation();
+			CueParams.EffectCauser = ActorInfo->AvatarActor.Get();
+			ASC->ExecuteGameplayCue(GhostTrailCueTag, CueParams);
+		}
+	}
 
 	if (SelectedMontage)
 	{

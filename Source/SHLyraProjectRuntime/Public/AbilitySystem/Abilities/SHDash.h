@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
+#include "GameplayTagContainer.h"
 
 #include "SHDash.generated.h"
 
@@ -95,4 +96,9 @@ protected:
 	// 우측 대쉬 몽타주.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Dash|Montages")
 	TObjectPtr<UAnimMontage> DashMontage_Right;
+
+	// 대쉬 중 재생할 잔상 GameplayCue 태그. 비워 두면 잔상 없음.
+	// GCN_SH_GhostTrail (GameplayCueNotify_Actor) 에서 처리.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Dash|VFX", meta = (Categories = "GameplayCue"))
+	FGameplayTag GhostTrailCueTag;
 };
