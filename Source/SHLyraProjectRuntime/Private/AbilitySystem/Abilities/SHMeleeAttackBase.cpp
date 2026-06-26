@@ -6,6 +6,8 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 void USHMeleeAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -137,6 +139,31 @@ void USHMeleeAttackBase::PerformHit(const FGameplayAbilityActorInfo* ActorInfo)
 		// 빙결 등 상태이상에 따른 배율은 USHDamageExecution이 처리한다.
 		ApplyEffectToTarget(DamageEffect, InstigatorASC, TargetASC, &Hit);
 
+		// 넉백 — 공격자→피격자 수평 방향으로 발사
+		if (KnockbackStrength > 0.f)
+		{
+			if (ACharacter* HitChar = Cast<ACharacter>(HitActor))
+			{
+				const FVector Dir = (HitActor->GetActorLocation() - AvatarActor->GetActorLocation()).GetSafeNormal2D();
+				HitChar->LaunchCharacter(Dir * KnockbackStrength + FVector(0.f, 0.f, KnockbackZStrength), true, true);
+			}
+		}
+
 		DamagedActors.Add(HitActor);
+	}
+
+	// HitStop — 히트 성공 시에만 발동. FTimerManager는 실시간 기준이라 TimeDilation 보정 불필요.
+	if (!DamagedActors.IsEmpty() && HitStopTimeDilation > 0.f)
+	{
+		UGameplayStatics::SetGlobalTimeDilation(AvatarActor, HitStopTimeDilation);
+
+		FTimerHandle HitStopTimer;
+		AvatarActor->GetWorldTimerManager().SetTimer(HitStopTimer,
+			FTimerDelegate::CreateWeakLambda(AvatarActor,
+				[AvatarActor]()
+				{
+					UGameplayStatics::SetGlobalTimeDilation(AvatarActor, 1.0f);
+				}),
+			HitStopDuration, false);
 	}
 }

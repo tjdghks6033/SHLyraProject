@@ -67,6 +67,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile|Effects")
 	TArray<TSubclassOf<UGameplayEffect>> OnHitEffects;
 
+	// 피격 대상에게 적용할 수평 넉백 힘 (cm/s). 0이면 넉백 없음.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile|Effects")
+	float KnockbackStrength = 0.f;
+
+	// 넉백 수직 힘 (cm/s). KnockbackStrength > 0 일 때만 적용.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile|Effects")
+	float KnockbackZStrength = 80.f;
+
+	// 히트 성공 시 적용할 GlobalTimeDilation. 0이면 HitStop 없음 (권장값: 0.05).
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile|HitStop", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HitStopTimeDilation = 0.f;
+
+	// HitStop 실시간 지속 시간 (초).
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Projectile|HitStop", meta = (ClampMin = "0.0"))
+	float HitStopDuration = 0.06f;
+
 private:
 
 	// Pawn 등 Overlap 대상에 충돌 시 (데미지 + 임팩트 GameplayCue)

@@ -5,8 +5,10 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameplayCueNotify_Static.h"
+#include "Kismet/GameplayStatics.h"
 
 ASHMagicProjectileActor::ASHMagicProjectileActor()
 {
@@ -81,6 +83,31 @@ void ASHMagicProjectileActor::OnSphereOverlap(UPrimitiveComponent* OverlappedCom
 			{
 				InstigatorASC->ApplyGameplayEffectSpecToTarget(*EffectSpec.Data.Get(), TargetASC);
 			}
+		}
+
+		// 넉백 — 발사체 위치→피격자 방향으로 발사
+		if (KnockbackStrength > 0.f)
+		{
+			if (ACharacter* HitChar = Cast<ACharacter>(OtherActor))
+			{
+				const FVector Dir = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+				HitChar->LaunchCharacter(Dir * KnockbackStrength + FVector(0.f, 0.f, KnockbackZStrength), true, true);
+			}
+		}
+
+		// HitStop — FTimerManager는 실시간 기준이라 TimeDilation 보정 불필요
+		if (HitStopTimeDilation > 0.f)
+		{
+			UGameplayStatics::SetGlobalTimeDilation(this, HitStopTimeDilation);
+
+			FTimerHandle HitStopTimer;
+			GetWorldTimerManager().SetTimer(HitStopTimer,
+				FTimerDelegate::CreateWeakLambda(this,
+					[this]()
+					{
+						UGameplayStatics::SetGlobalTimeDilation(this, 1.0f);
+					}),
+				HitStopDuration, false);
 		}
 
 		DamagedActors.Add(OtherActor);
