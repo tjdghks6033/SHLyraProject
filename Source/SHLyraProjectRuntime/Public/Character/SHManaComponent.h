@@ -11,10 +11,7 @@ class UGameplayEffect;
 class USHManaSet;
 struct FGameplayEffectSpec;
 
-// -------------------------------------------------------
-// 메시지 구조체: GameplayMessageSubsystem을 통해
-// UI로 마나 변화를 전달할 때 사용하는 데이터 컨테이너
-// -------------------------------------------------------
+// GameplayMessageSubsystem을 통해 UI로 마나 변화를 전달할 때 쓰는 데이터 컨테이너
 USTRUCT(BlueprintType)
 struct FSHManaChangedMessage
 {
@@ -38,19 +35,17 @@ struct FSHManaChangedMessage
 };
 
 
-// -------------------------------------------------------
-// USHManaComponent
-//
-// USHManaSet 기반 마나 자원 컴포넌트. 공통 골격은 USHResourceComponent가 담당하고,
-// 이 클래스는 마나 타입에 특화된 훅(어트리뷰트 셋/델리게이트/태그/메시지)만 구현한다.
-//
-// 마나 소비 자체는 GA_SHMagicProjectile의 CostGameplayEffectClass(GE_SHMagicManaCost)가
-// 처리한다. 즉 이 컴포넌트는 UI 브로드캐스트·태그 관리·블록/언블록만 담당하며,
-// 스태미나와 달리 AbilityActivatedCallbacks로 소비 GE를 별도 적용하지 않는다
-// (OnPostInitialize 훅을 override하지 않음).
-//
-// GameFeatureAction_AddComponents를 통해 ALyraCharacter에 주입됩니다.
-// -------------------------------------------------------
+/**
+ * USHManaComponent
+ *
+ * USHManaSet 기반 마나 자원 컴포넌트. 공통 골격은 USHResourceComponent가 담당하고,
+ * 이 클래스는 마나 타입에 특화된 훅(어트리뷰트 셋/델리게이트/태그/메시지)만 구현한다.
+ *
+ * 마나 소비 자체는 GA_SHMagicProjectile의 CostGameplayEffectClass(GE_SHMagicManaCost)가
+ * 처리한다. 이 컴포넌트는 UI 브로드캐스트·태그 관리·블록/언블록만 담당하며,
+ * 스태미나와 달리 AbilityActivatedCallbacks로 소비 GE를 별도 적용하지 않는다
+ * (OnPostInitialize 훅을 override하지 않음).
+ */
 UCLASS(Blueprintable, Meta=(BlueprintSpawnableComponent))
 class SHLYRAPROJECTRUNTIME_API USHManaComponent : public USHResourceComponent
 {
@@ -90,9 +85,7 @@ protected:
 	virtual void BroadcastChange(float CurrentValue, float MaxValue) const override;
 	//~ End of USHResourceComponent 타입별 훅
 
-	// -------------------------------------------------------
-	// USHManaSet 델리게이트 핸들러 — 베이스 공통 로직으로 위임한다.
-	// -------------------------------------------------------
+	// 이하는 USHManaSet 델리게이트 핸들러 — 베이스 공통 로직으로 위임한다.
 
 	// 마나 값이 변경될 때 호출 (서버: GE 실행 후 / 클라이언트: OnRep)
 	void HandleManaChanged(AActor* Instigator, AActor* Causer,
@@ -103,10 +96,6 @@ protected:
 	void HandleOutOfMana(AActor* Instigator, AActor* Causer,
 		const FGameplayEffectSpec* Spec, float Magnitude,
 		float OldValue, float NewValue);
-
-	// -------------------------------------------------------
-	// 마나 특화 설정/멤버
-	// -------------------------------------------------------
 
 	// Periodic GE로 구현된 마나 회복 이펙트.
 	// DA_SHAbilitySet에 등록하지 않고 이 컴포넌트가 직접 관리합니다.

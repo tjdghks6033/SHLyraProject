@@ -11,30 +11,18 @@
 class UAbilitySystemComponent;
 class UGameplayEffect;
 
-// -------------------------------------------------------
-// USHResourceComponent
-//
-// 마나/스태미나처럼 "어트리뷰트 + 자동 회복 + 소진 차단"을 가진 자원 컴포넌트의
-// 공통 골격을 담은 추상 베이스. (Template Method 패턴)
-//
-// 베이스가 담당하는 공통 흐름:
-//   1. ASC 준비 완료 후 자원 어트리뷰트 셋 델리게이트 바인딩
-//   2. 값 변화 시 GameplayTag 관리 (소진 태그) + UI 브로드캐스트
-//   3. Regen GE 최적화 관리 (가득 차면 제거, 소비되면 재적용)
-//   4. 값 < 코스트 임계값 시 특정 어빌리티 태그 Block/Unblock
-//
-// 타입별로 다른 부분(어트리뷰트 셋 타입, 델리게이트, 태그, 메시지 payload)은
-// 순수 가상 훅으로 파생 클래스에 위임한다.
-//
-// OnPostInitialize / OnPreUninitialize 는 "한 파생만 필요한 추가 동작"을 위한
-// 빈 기본 구현 훅이다. 예: 스태미나는 ShooterCore의 GA_Hero_Dash(무수정 원칙상
-// 코스트 GE를 박을 수 없는 빌려온 어빌리티)에 비용을 외부에서 물리기 위해
-// AbilityActivatedCallbacks를 여기서 바인딩한다. 마나는 자체 어빌리티라
-// CostGameplayEffectClass로 정석 차감하므로 이 훅이 필요 없다.
-//
-// 파생 concrete 클래스(USHManaComponent/USHStaminaComponent)가
-// GameFeatureAction_AddComponents로 ALyraCharacter에 주입된다.
-// -------------------------------------------------------
+/**
+ * USHResourceComponent
+ *
+ * 마나/스태미나처럼 "어트리뷰트 + 자동 회복 + 소진 차단"을 가진 자원 컴포넌트의
+ * 공통 골격을 담은 추상 베이스. 어트리뷰트 셋 타입·태그·메시지 payload 등
+ * 타입별로 다른 부분만 순수 가상 훅으로 파생 클래스에 위임한다.
+ *
+ * OnPostInitialize/OnPreUninitialize는 한 파생만 필요한 추가 동작을 위한 빈 훅이다.
+ * 예: 스태미나는 ShooterCore의 GA_Hero_Dash(무수정 원칙상 코스트 GE를 못 박는 빌려온
+ * 어빌리티)에 비용을 외부에서 물리기 위해 AbilityActivatedCallbacks를 여기서 바인딩한다.
+ * 마나는 자체 어빌리티라 CostGameplayEffectClass로 정석 차감하므로 이 훅이 필요 없다.
+ */
 UCLASS(Abstract)
 class SHLYRAPROJECTRUNTIME_API USHResourceComponent : public UGameFrameworkComponent
 {
@@ -51,15 +39,10 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	//~ End of UActorComponent interface
 
-	// -------------------------------------------------------
-	// ASC 초기화 콜백 (베이스 구현)
-	// -------------------------------------------------------
 	void OnAbilitySystemInitialized();
 	void OnAbilitySystemUninitialized();
 
-	// -------------------------------------------------------
-	// 공통 로직 (베이스 구현) — 파생의 델리게이트 핸들러가 호출한다.
-	// -------------------------------------------------------
+	// 이하는 파생의 델리게이트 핸들러가 호출하는 공통 로직.
 
 	// 자원 값이 변할 때마다: Regen GE 토글 + 소진 태그 해제 + 임계값 Block/Unblock + 브로드캐스트
 	void HandleValueChanged(float OldValue, float NewValue);
@@ -75,12 +58,9 @@ protected:
 
 	bool IsResourceDepleted() const { return bIsResourceDepleted; }
 
-	// -------------------------------------------------------
-	// 타입별 훅 (파생이 구현)
-	// -------------------------------------------------------
-
-	// UCLASS는 추상이라도 CDO 생성을 위해 C++상 concrete여야 하므로
-	// '= 0' 대신 PURE_VIRTUAL 매크로를 쓴다 (베이스 호출 시 런타임 assert, 파생이 override).
+	// 이하는 파생이 구현할 타입별 훅. UCLASS는 추상이라도 CDO 생성을 위해 C++상
+	// concrete여야 하므로 '= 0' 대신 PURE_VIRTUAL 매크로를 쓴다 (베이스 호출 시 런타임
+	// assert, 파생이 override).
 
 	// ASC에서 자원 어트리뷰트 셋을 찾아 파생 멤버에 캐싱한다. 찾으면 true.
 	virtual bool ResolveAttributeSet(UAbilitySystemComponent* ASC) PURE_VIRTUAL(USHResourceComponent::ResolveAttributeSet, return false;);
@@ -109,19 +89,13 @@ protected:
 	// GameplayMessageSubsystem으로 UI에 자원 정보를 브로드캐스트한다 (payload는 파생별).
 	virtual void BroadcastChange(float CurrentValue, float MaxValue) const PURE_VIRTUAL(USHResourceComponent::BroadcastChange, );
 
-	// -------------------------------------------------------
-	// 확장 훅 (빈 기본 구현 — 필요한 파생만 override)
-	// -------------------------------------------------------
+	// 이하는 필요한 파생만 override하는 확장 훅 (빈 기본 구현).
 
 	// 초기화 마지막에 호출. 한 파생만 필요한 추가 바인딩에 사용 (스태미나 대쉬 코스트 감시 등).
 	virtual void OnPostInitialize() {}
 
 	// 해제 시작에 호출. OnPostInitialize에서 건 바인딩을 정리한다 (CachedASC 유효 시점).
 	virtual void OnPreUninitialize() {}
-
-	// -------------------------------------------------------
-	// 공통 멤버 변수
-	// -------------------------------------------------------
 
 	// ASC 초기화 이후 캐싱. Regen GE 적용/제거, Block/Unblock에 사용.
 	UPROPERTY()

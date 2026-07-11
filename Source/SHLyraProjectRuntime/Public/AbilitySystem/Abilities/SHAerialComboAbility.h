@@ -56,7 +56,6 @@ protected:
 		bool bReplicateEndAbility, bool bWasCancelled) override;
 	//~ End of UGameplayAbility interface
 
-	// ── 몽타주 ──────────────────────────────────────────────
 	// AnimNotify_GameplayEvent(Event.SH.AerialCombo.Launch) 포함 필수
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Montage")
 	TObjectPtr<UAnimMontage> LaunchMontage;
@@ -73,7 +72,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Montage")
 	TObjectPtr<UAnimMontage> BossAirborneHitReactMontage;
 
-	// ── GameplayEffect ───────────────────────────────────────
 	// 보스에 적용: Status.SH.Launched 부여 — Duration Policy: Infinite (코드에서 Slam 시 제거)
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Effects")
 	TSubclassOf<UGameplayEffect> LaunchedStatusEffect;
@@ -90,12 +88,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Effects")
 	TSubclassOf<UGameplayEffect> KnockedDownEffect;
 
-	// ── 카메라 모드 ──────────────────────────────────────
 	// EndAbility 시 자동 복원 (LyraGameplayAbility::ClearCameraMode).
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Camera")
 	TSubclassOf<ULyraCameraMode> UltimateCameraMode;
 
-	// ── 카메라 셰이크 ──────────────────────────────────────
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|CameraShake")
 	TSubclassOf<UCameraShakeBase> LaunchShake;
 
@@ -113,7 +109,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|CameraShake", meta = (ClampMin = "1.0"))
 	float SlamShakeRadius = 1500.f;
 
-	// ── 물리 파라미터 ─────────────────────────────────────
 	// 보스에 가하는 상향 런치 속도 (cm/s)
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Physics", meta = (ClampMin = "1.0"))
 	float LaunchZForce = 1500.f;
@@ -122,7 +117,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Physics", meta = (ClampMin = "1.0"))
 	float SlamZForce = 2000.f;
 
-	// ── 범위 / 위치 ───────────────────────────────────────
 	// 전방 타겟 탐색 거리 (cm). 플레이어 정면으로 이 거리만큼 스윕하고, 적이 없으면 어빌리티 취소.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo", meta = (ClampMin = "1.0"))
 	float TargetSearchRange = 400.f;
@@ -139,7 +133,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo")
 	float TeleportZOffset = 0.f;
 
-	// ── GameplayCue 태그 ──────────────────────────────────
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AerialCombo|Cues")
 	FGameplayTag TeleportCueTag;
 
@@ -152,13 +145,11 @@ protected:
 
 private:
 
-	// ── Phase 진입 함수 ───────────────────────────────────
 	void StartLaunchPhase();
 	void StartTeleportPhase();
 	void StartAerialComboPhase();
 	void StartGroundSlamPhase();
 
-	// ── 몽타주 콜백 ──────────────────────────────────────
 	UFUNCTION() void OnLaunchMontageCompleted();
 	UFUNCTION() void OnLaunchMontageCancelled();
 	UFUNCTION() void OnAerialMontageCompleted();
@@ -166,12 +157,10 @@ private:
 	UFUNCTION() void OnSlamMontageCompleted();
 	UFUNCTION() void OnSlamMontageCancelled();
 
-	// ── AnimNotify 이벤트 콜백 ────────────────────────────
 	UFUNCTION() void OnLaunchEventReceived(FGameplayEventData Payload);
 	UFUNCTION() void OnAerialHitEventReceived(FGameplayEventData Payload);
 	UFUNCTION() void OnSlamEventReceived(FGameplayEventData Payload);
 
-	// ── 헬퍼 ─────────────────────────────────────────────
 	// 플레이어 정면을 구체 스윕해 가장 가까운 ASC 보유 캐릭터를 반환 (TargetSearchRange/Radius 사용).
 	// 눈앞에 적이 없으면 nullptr → ActivateAbility에서 즉시 EndAbility.
 	ACharacter* FindTargetInFront() const;

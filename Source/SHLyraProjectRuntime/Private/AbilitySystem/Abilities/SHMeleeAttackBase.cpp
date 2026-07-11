@@ -31,7 +31,6 @@ void USHMeleeAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		return;
 	}
 
-	// 1. 공격 몽타주 재생 태스크
 	UAbilityTask_PlayMontageAndWait* MontageTask =
 		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this, NAME_None, AttackMontage, 1.0f, NAME_None, true);
@@ -42,8 +41,8 @@ void USHMeleeAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	MontageTask->OnInterrupted.AddDynamic(this, &USHMeleeAttackBase::OnMontageCancelled);
 	MontageTask->ReadyForActivation();
 
-	// 2. AnimNotify 발화 시점 대기 태스크 (AnimNotify_GameplayEvent → HitDetect 태그)
-	//    OnlyTriggerOnce=false: 한 공격 내에서 여러 번 판정이 필요한 경우를 대비
+	// AnimNotify_GameplayEvent가 HitDetect 태그를 발화할 때까지 대기.
+	// OnlyTriggerOnce=false: 한 공격 내에서 여러 번 판정이 필요한 경우를 대비
 	UAbilityTask_WaitGameplayEvent* WaitEventTask =
 		UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
 			this, GetHitDetectTag(), nullptr, false, true);

@@ -17,19 +17,14 @@ struct FSHPlayerDiedMessage
 	TObjectPtr<AActor> Player = nullptr;
 };
 
-// -------------------------------------------------------
-// USHPlayerDeathComponent
-//
-// 로컬 플레이어 캐릭터의 사망을 GameplayMessageSubsystem으로 중계하는 컴포넌트.
-//
-// 주요 역할:
-//   1. ASC 준비 완료 후 LyraHealthComponent.OnDeathStarted 바인딩
-//   2. 로컬 플레이어 사망 시 SH.Message.Player.Died 브로드캐스트
-//
-// Lyra 설계 원칙 (캐릭터 → 컴포넌트 → 메시지 버스 → UI) 준수.
-// USHStaminaComponent / USHManaComponent 와 동일한 패턴.
-// GameFeatureAction_AddComponents로 ALyraCharacter에 주입됩니다.
-// -------------------------------------------------------
+/**
+ * USHPlayerDeathComponent
+ *
+ * 로컬 플레이어 캐릭터의 사망을 GameplayMessageSubsystem으로 중계하는 컴포넌트.
+ * ASC 준비 완료 후 LyraHealthComponent.OnDeathStarted에 바인딩하고, 로컬 플레이어
+ * 사망 시 SH.Message.Player.Died를 브로드캐스트한다. USHStaminaComponent/
+ * USHManaComponent와 동일한 패턴이다.
+ */
 UCLASS(Blueprintable, Meta=(BlueprintSpawnableComponent))
 class SHLYRAPROJECTRUNTIME_API USHPlayerDeathComponent : public UGameFrameworkComponent
 {

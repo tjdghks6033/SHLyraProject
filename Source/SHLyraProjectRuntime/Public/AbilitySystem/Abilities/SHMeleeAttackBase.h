@@ -13,18 +13,11 @@ struct FGameplayEventData;
 /**
  * USHMeleeAttackBase
  *
- * 근접 공격 어빌리티 공통 베이스 (추상).
- *
- * 공통 흐름:
- *   1. ActivateAbility → CommitAbility (비용/쿨다운)
- *   2. UAbilityTask_PlayMontageAndWait 로 AttackMontage 재생
- *   3. UAbilityTask_WaitGameplayEvent 로 GetHitDetectTag() 대기
- *      → AnimNotify_GameplayEvent 발화 시 OnGameplayEventReceived 호출
- *   4. PerformHit: ComputeHitTrace() 가 계산한 볼륨으로 SphereTrace → DamageEffect 적용
- *   5. 몽타주 완료/취소 → EndAbility
+ * 근접 공격 어빌리티 공통 베이스 (추상). AttackMontage의 AnimNotify_GameplayEvent가
+ * GetHitDetectTag()를 발화하면 ComputeHitTrace()가 계산한 볼륨으로 SphereTrace 후
+ * DamageEffect를 적용한다. 히트 판정은 서버(Authority)에서만 실행된다.
  *
  * 파생은 히트 트리거 태그(GetHitDetectTag)와 판정 볼륨(ComputeHitTrace)만 구현한다.
- * 히트 판정은 서버(Authority)에서만 실행된다.
  */
 UCLASS(Abstract)
 class SHLYRAPROJECTRUNTIME_API USHMeleeAttackBase : public USHGameplayAbility
@@ -82,11 +75,9 @@ protected:
 
 private:
 
-	// 몽타주 정상 완료(OnCompleted / OnBlendOut)
 	UFUNCTION()
 	void OnMontageCompleted();
 
-	// 몽타주 취소(OnCancelled / OnInterrupted)
 	UFUNCTION()
 	void OnMontageCancelled();
 

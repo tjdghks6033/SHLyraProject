@@ -136,11 +136,7 @@ void USHResourceComponent::HandleValueChanged(float OldValue, float NewValue)
 	const bool  bWasFull = (OldValue >= MaxValue);
 	const bool  bIsFull  = (NewValue >= MaxValue);
 
-	// -------------------------------------------------------
-	// Regen GE 관리:
-	//   가득 찼을 때 → GE 제거 (불필요한 Periodic 틱 차단)
-	//   소비로 인해 가득 참 해제 → GE 재적용
-	// -------------------------------------------------------
+	// Regen GE 관리: 가득 찼을 때 GE 제거(불필요한 Periodic 틱 차단), 소비로 가득 참 해제 시 재적용
 	if (bWasFull && !bIsFull && GetRegenEffect())
 	{
 		ApplyRegenEffect();
@@ -157,11 +153,7 @@ void USHResourceComponent::HandleValueChanged(float OldValue, float NewValue)
 		bIsResourceDepleted = false;
 	}
 
-	// -------------------------------------------------------
-	// 어빌리티 차단/해제:
-	//   값 < 코스트 임계값 → 차단
-	//   값 ≥ 코스트 임계값 → 차단 해제
-	// -------------------------------------------------------
+	// 어빌리티 차단/해제: 값 < 코스트 임계값이면 차단, 그 이상이면 해제
 	const bool bCanAfford = (NewValue >= GetCostThreshold());
 	if (bAbilityBlocked && bCanAfford)
 	{

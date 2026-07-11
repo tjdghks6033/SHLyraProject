@@ -76,7 +76,6 @@ protected:
 		bool bReplicateEndAbility, bool bWasCancelled) override;
 	//~ End of UGameplayAbility interface
 
-	// ── 공용 헬퍼 ─────────────────────────────────────────────
 	// GE를 대상 ASC에 적용하고 ActiveGameplayEffectHandle을 반환한다.
 	// HitResult를 넘기면 EffectContext에 추가되어 USHDamageExecution이 히트 정보를 활용한다.
 	FActiveGameplayEffectHandle ApplyEffectToTarget(TSubclassOf<UGameplayEffect> EffectClass,

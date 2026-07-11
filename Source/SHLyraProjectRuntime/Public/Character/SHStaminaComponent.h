@@ -12,10 +12,7 @@ class UGameplayEffect;
 class USHStaminaSet;
 struct FGameplayEffectSpec;
 
-// -------------------------------------------------------
-// 메시지 구조체: GameplayMessageSubsystem을 통해
-// UI로 스태미나 변화를 전달할 때 사용하는 데이터 컨테이너
-// -------------------------------------------------------
+// GameplayMessageSubsystem을 통해 UI로 스태미나 변화를 전달할 때 쓰는 데이터 컨테이너
 USTRUCT(BlueprintType)
 struct FSHStaminaChangedMessage
 {
@@ -39,18 +36,16 @@ struct FSHStaminaChangedMessage
 };
 
 
-// -------------------------------------------------------
-// USHStaminaComponent
-//
-// USHStaminaSet 기반 스태미나 자원 컴포넌트. 공통 골격은 USHResourceComponent가
-// 담당하고, 이 클래스는 스태미나 타입 특화 훅만 구현한다.
-//
-// 추가로, ShooterCore의 GA_Hero_Dash는 무수정 원칙상 코스트 GE를 박을 수 없는
-// 빌려온 어빌리티이므로, OnPostInitialize에서 AbilityActivatedCallbacks를 감시해
-// 대쉬 발동 시 StaminaDashCostEffect를 외부에서 적용한다. (마나엔 없는 비대칭)
-//
-// GameFeatureAction_AddComponents를 통해 ALyraCharacter에 주입됩니다.
-// -------------------------------------------------------
+/**
+ * USHStaminaComponent
+ *
+ * USHStaminaSet 기반 스태미나 자원 컴포넌트. 공통 골격은 USHResourceComponent가
+ * 담당하고, 이 클래스는 스태미나 타입 특화 훅만 구현한다.
+ *
+ * ShooterCore의 GA_Hero_Dash는 무수정 원칙상 코스트 GE를 박을 수 없는 빌려온
+ * 어빌리티이므로, OnPostInitialize에서 AbilityActivatedCallbacks를 감시해
+ * 대쉬 발동 시 StaminaDashCostEffect를 외부에서 적용한다 (마나엔 없는 비대칭).
+ */
 UCLASS(Blueprintable, Meta=(BlueprintSpawnableComponent))
 class SHLYRAPROJECTRUNTIME_API USHStaminaComponent : public USHResourceComponent
 {
@@ -94,9 +89,7 @@ protected:
 	virtual void OnPreUninitialize() override;
 	//~ End of USHResourceComponent 타입별 훅
 
-	// -------------------------------------------------------
-	// USHStaminaSet 델리게이트 핸들러 — 베이스 공통 로직으로 위임한다.
-	// -------------------------------------------------------
+	// 이하는 USHStaminaSet 델리게이트 핸들러 — 베이스 공통 로직으로 위임한다.
 
 	// 스태미나 값이 변경될 때 호출 (서버: GE 실행 후 / 클라이언트: OnRep)
 	void HandleStaminaChanged(AActor* Instigator, AActor* Causer,
@@ -111,10 +104,6 @@ protected:
 	// ASC::OnAbilityActivated 콜백: Ability.Type.Action.Dash 태그를 가진
 	// 어빌리티가 활성화되면 StaminaDashCostEffect를 적용합니다.
 	void HandleAbilityActivated(UGameplayAbility* ActivatedAbility);
-
-	// -------------------------------------------------------
-	// 스태미나 특화 설정/멤버
-	// -------------------------------------------------------
 
 	// Periodic GE로 구현된 스태미나 회복 이펙트.
 	// DA_SHAbilitySet에 등록하지 않고 이 컴포넌트가 직접 관리합니다.

@@ -15,10 +15,6 @@
 // GE_SHFrozenStatus의 GrantedTags에 의해 부여되며, 2.5초 후 자동 제거된다.
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen, "Status.SH.Frozen");
 
-// ----------------------------------------------------------------
-// 어트리뷰트 캡처 정의
-// ----------------------------------------------------------------
-
 struct FSHDamageStatics
 {
 	// Source(공격자)의 BaseDamage를 스냅샷으로 캡처한다.
@@ -39,10 +35,6 @@ static FSHDamageStatics& SHDamageStatics()
 	static FSHDamageStatics Statics;
 	return Statics;
 }
-
-// ----------------------------------------------------------------
-// USHDamageExecution
-// ----------------------------------------------------------------
 
 USHDamageExecution::USHDamageExecution()
 {
@@ -100,11 +92,8 @@ void USHDamageExecution::Execute_Implementation(
 		}
 	}
 
-	// ----------------------------------------------------------------
-	// 상태이상 데미지 배율
 	// TargetTags는 GE가 Execute되는 시점에 캡처되므로,
 	// GE_SHFrozenStatus가 부여한 Status.SH.Frozen 태그가 정확히 반영된다.
-	// ----------------------------------------------------------------
 	const bool bTargetIsFrozen = TargetTags && TargetTags->HasTagExact(TAG_Status_SH_Frozen);
 	const float FrozenMultiplier = bTargetIsFrozen ? 2.0f : 1.0f;
 

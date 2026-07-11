@@ -92,9 +92,7 @@ void USHAerialComboAbility::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Phase 1: 런치
-// ─────────────────────────────────────────────────────────────────────────────
 
 void USHAerialComboAbility::StartLaunchPhase()
 {
@@ -165,9 +163,7 @@ void USHAerialComboAbility::OnLaunchMontageCancelled()
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Phase 2: 텔레포트
-// ─────────────────────────────────────────────────────────────────────────────
 
 void USHAerialComboAbility::StartTeleportPhase()
 {
@@ -221,9 +217,7 @@ void USHAerialComboAbility::StartTeleportPhase()
 	StartAerialComboPhase();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Phase 3: 공중 콤보
-// ─────────────────────────────────────────────────────────────────────────────
 
 void USHAerialComboAbility::StartAerialComboPhase()
 {
@@ -283,9 +277,7 @@ void USHAerialComboAbility::OnAerialMontageCancelled()
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Phase 4: 그라운드 슬램
-// ─────────────────────────────────────────────────────────────────────────────
 
 void USHAerialComboAbility::StartGroundSlamPhase()
 {
@@ -370,10 +362,6 @@ void USHAerialComboAbility::OnSlamMontageCancelled()
 {
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 헬퍼
-// ─────────────────────────────────────────────────────────────────────────────
 
 ACharacter* USHAerialComboAbility::FindTargetInFront() const
 {

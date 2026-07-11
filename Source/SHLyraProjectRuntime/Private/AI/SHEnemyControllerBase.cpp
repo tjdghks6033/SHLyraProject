@@ -43,10 +43,8 @@ void ASHEnemyControllerBase::BeginPlay()
 		this, &ASHEnemyControllerBase::OnTargetPerceptionUpdated);
 }
 
-// ---------------------------------------------------------------------------
 // ILyraTeamAgentInterface — 팀 ID는 PlayerState가 보유, 컨트롤러는 위임·전파 담당
 // (Lyra ALyraPlayerBotController의 패턴을 재현)
-// ---------------------------------------------------------------------------
 
 void ASHEnemyControllerBase::SetGenericTeamId(const FGenericTeamId& NewTeamID)
 {
@@ -87,9 +85,7 @@ ETeamAttitude::Type ASHEnemyControllerBase::GetTeamAttitudeTowards(const AActor&
 	return ETeamAttitude::Neutral;
 }
 
-// ---------------------------------------------------------------------------
 // PlayerState 변경 흐름 — 팀 바인딩 재설정
-// ---------------------------------------------------------------------------
 
 void ASHEnemyControllerBase::InitPlayerState()
 {
@@ -161,10 +157,6 @@ void ASHEnemyControllerBase::OnUnPossess()
 
 	Super::OnUnPossess();
 }
-
-// ---------------------------------------------------------------------------
-// Perception
-// ---------------------------------------------------------------------------
 
 void ASHEnemyControllerBase::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {

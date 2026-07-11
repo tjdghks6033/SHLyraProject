@@ -38,7 +38,6 @@ protected:
 	//~End of AController interface
 
 	// 이동을 멈추는 근접 거리 임계값 (cm). 이 거리 이내면 MoveToActor를 호출하지 않는다.
-	// 추후 근접 공격 어빌리티 발동 조건으로도 활용 가능.
 	UPROPERTY(EditDefaultsOnly, Category = "SH|AI", meta = (ClampMin = "50.0"))
 	float MeleeRange = 200.0f;
 };

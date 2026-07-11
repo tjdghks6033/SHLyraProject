@@ -31,7 +31,7 @@ void ASHBotController::InitPlayerState()
 	// Experience를 구독해 `OnExperienceLoaded` 즉시 실행 → `SetPawnData(DefaultPawnData)`를 먼저
 	// 수행하기 때문에 우리 오버라이드에서 Super::InitPlayerState 호출 후에는 PS의 PawnData가
 	// 이미 확정돼 있어 덮어쓸 수 없다. 봇을 다른 폰으로 스폰하려면 ALyraGameMode/ALyraPlayerState를
-	// 모두 서브클래싱하는 큰 작업이 필요하므로 Phase 7에서는 팀 색상(DisplayAsset)만으로 구분한다.
+	// 모두 서브클래싱해야 하므로, 여기서는 팀 색상(DisplayAsset)만으로 봇을 구분한다.
 	if (const UWorld* World = GetWorld())
 	{
 		if (ULyraTeamSubsystem* TeamSubsystem = World->GetSubsystem<ULyraTeamSubsystem>())
@@ -55,7 +55,6 @@ void ASHBotController::Tick(float DeltaTime)
 	if (DistToTarget <= MeleeRange)
 	{
 		// 근접 사거리 도달: 이동 중지 + 타겟 응시.
-		// TODO: 근접 공격 어빌리티(ASHMeleeAttack) 발동 지점.
 		StopMovement();
 		SetFocus(CurrentTarget);
 	}
