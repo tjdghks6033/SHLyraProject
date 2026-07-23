@@ -22,10 +22,7 @@ Saved/
 .DS_Store
 Thumbs.db
 
-# 로컬 전용 기획/작업 문서 (GitHub에 올리지 않음)
-EXECUTE.md
-EXECUTE_ARCHIVE.md
-PLAN.md
-PLAN_ARCHIVE.md
-STUDY.md
-PORTFOLIO.md
+# 로컬 전용 문서 — README 제외 전부 (파일명 나열 시 커밋 히스토리에 노출되므로 와일드카드로 처리)
+*.md
+!README.md
+*.pdf
