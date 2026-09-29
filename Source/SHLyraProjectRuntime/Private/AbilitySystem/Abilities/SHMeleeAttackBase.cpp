@@ -9,6 +9,12 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "NativeGameplayTags.h"
+#include "TimerManager.h"
+
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Parrying, "Status.SH.Parrying");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Stunned, "Status.SH.Stunned");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Event_SH_Parry_Success, "Event.SH.Parry.Success");
 
 void USHMeleeAttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
@@ -134,6 +140,13 @@ void USHMeleeAttackBase::PerformHit(const FGameplayAbilityActorInfo* ActorInfo)
 			continue;
 		}
 
+		if (TryHandleParry(HitActor, InstigatorASC))
+		{
+			// A successful parry consumes the whole attack swing. No damage,
+			// knockback, or ordinary hit-stop is applied to any target.
+			return;
+		}
+
 		// 데미지 적용. HitResult를 넘겨 컨텍스트에 히트 정보를 싣는다.
 		// 빙결 등 상태이상에 따른 배율은 USHDamageExecution이 처리한다.
 		ApplyEffectToTarget(DamageEffect, InstigatorASC, TargetASC, &Hit);
@@ -165,4 +178,54 @@ void USHMeleeAttackBase::PerformHit(const FGameplayAbilityActorInfo* ActorInfo)
 				}),
 			HitStopDuration, false);
 	}
+}
+
+bool USHMeleeAttackBase::TryHandleParry(AActor* HitActor, UAbilitySystemComponent* InstigatorASC)
+{
+	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
+	AActor* Attacker = GetAvatarActorFromActorInfo();
+	if (!TargetASC || !InstigatorASC || !Attacker ||
+		!TargetASC->HasMatchingGameplayTag(TAG_Status_SH_Parrying))
+	{
+		return false;
+	}
+
+	// End the attack ability itself before starting the reaction. Stopping only
+	// the montage leaves the montage task and movement lock alive.
+	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+
+	FGameplayEventData EventData;
+	EventData.EventTag = TAG_Event_SH_Parry_Success;
+	EventData.Instigator = Attacker;
+	EventData.Target = HitActor;
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+		HitActor, TAG_Event_SH_Parry_Success, EventData);
+
+	InstigatorASC->AddLooseGameplayTag(TAG_Status_SH_Stunned);
+	if (ACharacter* AttackingCharacter = Cast<ACharacter>(Attacker))
+	{
+		FVector RecoilDirection = Attacker->GetActorLocation() - HitActor->GetActorLocation();
+		RecoilDirection.Z = 0.0f;
+		RecoilDirection = RecoilDirection.GetSafeNormal();
+		AttackingCharacter->LaunchCharacter(
+			RecoilDirection * ParryRecoilStrength,
+			true,
+			false);
+	}
+	const TWeakObjectPtr<UAbilitySystemComponent> WeakInstigatorASC = InstigatorASC;
+	FTimerHandle StunTimer;
+	Attacker->GetWorldTimerManager().SetTimer(
+		StunTimer,
+		FTimerDelegate::CreateWeakLambda(Attacker,
+			[WeakInstigatorASC]()
+			{
+				if (UAbilitySystemComponent* ASC = WeakInstigatorASC.Get())
+				{
+					ASC->RemoveLooseGameplayTag(TAG_Status_SH_Stunned);
+				}
+			}),
+		ParryStunDuration,
+		false);
+
+	return true;
 }

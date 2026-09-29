@@ -4,6 +4,7 @@
 #include "AbilitySystemComponent.h"
 #include "AIController.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
+#include "Animation/AnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "NativeGameplayTags.h"
 #include "TimerManager.h"
@@ -12,6 +13,7 @@
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Frozen,      "Status.SH.Frozen");
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Launched,    "Status.SH.Launched");
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_KnockedDown, "Status.SH.KnockedDown");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Status_SH_Stunned,     "Status.SH.Stunned");
 
 ASHEnemyBase::ASHEnemyBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -43,9 +45,54 @@ void ASHEnemyBase::OnAbilitySystemInitialized()
 	ASC->RegisterGameplayTagEvent(TAG_Status_SH_KnockedDown, EGameplayTagEventType::NewOrRemoved)
 		.AddUObject(this, &ASHEnemyBase::OnKnockedDownTagChanged);
 
+	ASC->RegisterGameplayTagEvent(TAG_Status_SH_Stunned, EGameplayTagEventType::NewOrRemoved)
+		.AddUObject(this, &ASHEnemyBase::OnStunnedTagChanged);
+
 	// Lyra 데미지 메시지 구독 — 피격 시 HitReactMontage 재생 (상태 조건부)
 	UGameplayMessageSubsystem& MsgSub = UGameplayMessageSubsystem::Get(this);
 	DamageMessageHandle = MsgSub.RegisterListener(TAG_Lyra_Damage_Message, this, &ASHEnemyBase::OnDamageMessageReceived);
+}
+
+void ASHEnemyBase::OnStunnedTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (NewCount > 0)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+		// Cut the attack pose almost immediately so the weapon-deflection motion
+		// wins instead of blending against the long attack montage.
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			AnimInstance->Montage_Stop(0.05f);
+		}
+		if (ParryReactionMontage)
+		{
+			PlayAnimMontage(ParryReactionMontage, ParryReactionPlayRate);
+		}
+
+		if (AAIController* AIC = GetController<AAIController>())
+		{
+			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
+			{
+				BTC->PauseLogic(TEXT("Parry stun"));
+			}
+		}
+	}
+	else if (ASC &&
+		!ASC->HasMatchingGameplayTag(TAG_Status_SH_Frozen) &&
+		!ASC->HasMatchingGameplayTag(TAG_Status_SH_Launched) &&
+		!ASC->HasMatchingGameplayTag(TAG_Status_SH_KnockedDown))
+	{
+		GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
+
+		if (AAIController* AIC = GetController<AAIController>())
+		{
+			if (UBehaviorTreeComponent* BTC = AIC->FindComponentByClass<UBehaviorTreeComponent>())
+			{
+				BTC->ResumeLogic(TEXT("Parry stun ended"));
+			}
+		}
+	}
 }
 
 void ASHEnemyBase::OnFrozenTagChanged(const FGameplayTag Tag, int32 NewCount)

@@ -10,6 +10,7 @@
 #include "SHEnemyBase.generated.h"
 
 class UGameplayEffect;
+class UAnimMontage;
 
 /**
  * ASHEnemyBase
@@ -65,6 +66,16 @@ private:
 
 	// Status.SH.KnockedDown 태그 부여/제거 시 호출. 넉다운 몽타주 재생 + BT 일시정지.
 	void OnKnockedDownTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	// Status.SH.Stunned pauses movement, animation, and behavior-tree logic.
+	void OnStunnedTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	// Short recoil animation used when this enemy's melee attack is parried.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Combat|Parry")
+	TObjectPtr<UAnimMontage> ParryReactionMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Combat|Parry", meta = (ClampMin = "0.1"))
+	float ParryReactionPlayRate = 1.35f;
 
 	// Lyra.Damage.Message 수신 → Launched/KnockedDown 상태가 아닐 때만 HitReactMontage 재생.
 	void OnDamageMessageReceived(FGameplayTag Channel, const FLyraVerbMessage& Payload);

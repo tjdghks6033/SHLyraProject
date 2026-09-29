@@ -47,6 +47,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `GA_SHIceBoltProjectile` | 캐스팅 몽타주 + AnimNotify 스폰 + ProjectileMovement + LyraDamageExecution |
 | `GA_SHFireballProjectile` | 화염 발사체 어빌리티 (E 슬롯), Niagara VFX 적용 |
 | `GA_SHAerialCombo` | R 슬롯 궁극기 — 보스 런치 → 플레이어 텔레포트 → 공중 콤보 ×3 → 그라운드 슬램. 4단계 Montage+AnimNotify 체인, GameplayCue VFX(Electricity) 연동 |
+| `GA_SHParry` | RMB 입력 후 0.3초 판정. 성공 시 보스 공격 어빌리티를 취소하고 전용 검 튕김 몽타주·수평 후퇴·1.9초 행동 잠금 적용 |
 
 ### 리소스 시스템 (GAS AttributeSet)
 

@@ -73,6 +73,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee|HitStop", meta = (ClampMin = "0.0"))
 	float HitStopDuration = 0.08f;
 
+	// Duration applied to the attacker when the target parries this melee hit.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee|Parry", meta = (ClampMin = "0.0"))
+	float ParryStunDuration = 1.9f;
+
+	// Physical recoil applied away from the character who performed the parry.
+	UPROPERTY(EditDefaultsOnly, Category = "SH|Melee|Parry", meta = (ClampMin = "0.0"))
+	float ParryRecoilStrength = 450.0f;
+
 private:
 
 	UFUNCTION()
@@ -87,4 +95,7 @@ private:
 
 	// ComputeHitTrace 기반 SphereTrace 후 범위 내 대상 ASC에 DamageEffect 적용.
 	void PerformHit(const FGameplayAbilityActorInfo* ActorInfo);
+
+	// Returns true when the hit was consumed by an active parry window.
+	bool TryHandleParry(AActor* HitActor, UAbilitySystemComponent* InstigatorASC);
 };
