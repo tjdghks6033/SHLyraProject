@@ -74,6 +74,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | `WBP_SHSkillBar` / `WBP_SHSkillSlot` | Q/W/E/R 스킬 액션바 — 방사형 쿨다운 오버레이, `Effect Tag Query` 방식 |
 | `WBP_SHBossHealthBar` | `SH.Message.Boss.Engaged` 구독 → 보스 액터 바인딩, 실시간 HP 갱신 |
 | Floating Damage Numbers | `GCNL_Character_DamageTaken` + `B_NiagaraNumberPopComponent` (Lyra 내장 파이프라인) |
+| `USHDamageOverlayComponent` | 로컬 플레이어 HP 35% 이하에서 `M_SH_DamageVignette` 카메라 PostProcess를 활성화하고 회복·사망 시 해제 |
 
 ### 상태이상 시스템 (진행 중)
 

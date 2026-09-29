@@ -6,6 +6,8 @@
 
 #include "SHPlayerDeathComponent.generated.h"
 
+class USHDamageOverlayComponent;
+
 // WBP_SHResultScreen이 구독하는 플레이어 사망 메시지 페이로드.
 USTRUCT(BlueprintType)
 struct FSHPlayerDiedMessage
@@ -39,6 +41,9 @@ protected:
 
 private:
 	void OnAbilitySystemInitialized();
+
+	UPROPERTY(Transient)
+	TObjectPtr<USHDamageOverlayComponent> DamageOverlayComponent;
 
 	UFUNCTION()
 	void OnDeathStarted(AActor* OwningActor);

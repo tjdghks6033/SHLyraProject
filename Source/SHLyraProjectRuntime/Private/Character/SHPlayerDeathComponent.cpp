@@ -1,6 +1,7 @@
 // Copyright SH. All Rights Reserved.
 
 #include "Character/SHPlayerDeathComponent.h"
+#include "Character/SHDamageOverlayComponent.h"
 
 #include "Character/LyraPawnExtensionComponent.h"
 #include "Character/LyraHealthComponent.h"
@@ -34,6 +35,12 @@ void USHPlayerDeathComponent::BeginPlay()
 
 void USHPlayerDeathComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (DamageOverlayComponent)
+	{
+		DamageOverlayComponent->DestroyComponent();
+		DamageOverlayComponent = nullptr;
+	}
+
 	if (ULyraHealthComponent* HealthComp = ULyraHealthComponent::FindHealthComponent(GetOwner()))
 	{
 		HealthComp->OnDeathStarted.RemoveDynamic(this, &ThisClass::OnDeathStarted);
@@ -44,6 +51,16 @@ void USHPlayerDeathComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void USHPlayerDeathComponent::OnAbilitySystemInitialized()
 {
+	// This component is already injected by GameFeatureAction. Create the visual-only
+	// companion locally so it never changes authoritative player or AI state.
+	const APawn* Pawn = Cast<APawn>(GetOwner());
+	const APlayerController* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+	if (PC && PC->IsLocalController() && !DamageOverlayComponent)
+	{
+		DamageOverlayComponent = NewObject<USHDamageOverlayComponent>(GetOwner());
+		DamageOverlayComponent->RegisterComponent();
+	}
+
 	ULyraHealthComponent* HealthComp = ULyraHealthComponent::FindHealthComponent(GetOwner());
 	if (!HealthComp)
 	{
