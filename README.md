@@ -81,7 +81,7 @@ Unreal Engine 5의 **Lyra Starter Game**을 기반으로,
 | 시스템 | 설명 |
 |--------|------|
 | 빙결(Freeze) | 아이스볼트 3스택 → `GE_SHFrozenStack` Overflow → `GE_SHFrozenStatus` 자동 적용. 이동 불가 + BT 정지 + `CustomTimeDilation=0`으로 애니메이션 완전 동결. 빙결 중 **모든 데미지 2배** (`USHDamageExecution`에서 TargetTags 확인). `GameplayCueNotify_Actor`로 VFX 연동 |
-| 점화(Ignite) | 파이어볼 히트 → `GE_SHIgniteStatus` DoT 0.5초 틱(+8/tick, 4초), `GCN_SH_Ignited` 루프 파티클 (1초 주기 `P_Fire5` Attach) |
+| 점화(Ignite) | 파이어볼 히트 → `GE_SHIgniteStatus` DoT 0.5초 틱(+8/tick, 4초). `GCN_SH_Ignited`가 즉시 2회 + 0.5초 주기로 `NS_SH_IgniteBody`를 스폰해 애니메이션 중인 스켈레탈 메시 표면에 불꽃 방출 |
 
 ### 기반 시스템
 
